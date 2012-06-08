@@ -10,15 +10,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 public class FlyInMenuActivity extends Activity {
 	private RootView mRootView;
-	private Button mToggle;
+	private ImageView mToggle;
 	private static final String TAG = "FlyInMenuActivity";
 
 	/** Called when the activity is first created. */
@@ -32,7 +30,7 @@ public class FlyInMenuActivity extends Activity {
 				.getApplicationContext()));
 
 		mRootView = (RootView) findViewById(R.id.root);
-		mToggle = (Button) findViewById(R.id.toggle);
+		mToggle = (ImageView) findViewById(R.id.toggle);
 		mToggle.setOnClickListener(new View.OnClickListener() {
 
 			@Override
@@ -41,19 +39,19 @@ public class FlyInMenuActivity extends Activity {
 			}
 		});
 	}
-	
+
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		Log.d(TAG, "keyCode:"+keyCode);
+		Log.d(TAG, "keyCode:" + keyCode);
 		return super.onKeyDown(keyCode, event);
 	}
-	
+
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent ev) {
 		// TODO Auto-generated method stub
 		return super.dispatchTouchEvent(ev);
 	}
-	
+
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		// TODO Auto-generated method stub
