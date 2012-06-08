@@ -31,7 +31,6 @@ public class RootView extends ViewGroup {
 	private boolean isMoving;
 	private boolean isOpened;
 
-	private VelocityTracker mVelocityTracker;
 	private int mBezelSwipeWidth;
 	private int mScreenWidth;
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
@@ -182,10 +181,6 @@ public class RootView extends ViewGroup {
 				|| action == MotionEvent.ACTION_UP) {
 			mIsBeingDragged = false;
 			mActivePointerId = INVALID_POINTER;
-			if (mVelocityTracker != null) {
-				mVelocityTracker.recycle();
-				mVelocityTracker = null;
-			}
 			return false;
 		}
 
@@ -197,14 +192,15 @@ public class RootView extends ViewGroup {
 
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
-			Log.d(TAG,
-					"onInterceptTouchEvent DOWN x:" + ev.getX() + ",y:"
-							+ ev.getY());
+			// Log.d(TAG,
+			// "onInterceptTouchEvent DOWN x:" + ev.getX() + ",y:"
+			// + ev.getY());
 			mStartX = ev.getX();
 			mStartY = ev.getY();
 			mLastX = ev.getX();
 			mLastY = ev.getY();
 			mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
+			mIsBeingDragged = false;
 			break;
 		case MotionEvent.ACTION_MOVE:
 
@@ -217,101 +213,97 @@ public class RootView extends ViewGroup {
 					activePointerId);
 			final float x = MotionEventCompat.getX(ev, pointerIndex);
 			final float y = MotionEventCompat.getY(ev, pointerIndex);
-			Log.d(TAG, "onInterceptTouchEvent MOVE x:" + x + ",y:" + y);
+			// Log.d(TAG, "onInterceptTouchEvent MOVE x:" + x + ",y:" + y);
 
-			mLastX = x;
-			mLastY = y;
-
-			double distance = Math.hypot(mLastX - mStartX, mLastY - mStartY);
+			double distance = Math.hypot(x - mStartX, y - mStartY);
 			if (mStartX <= mBezelSwipeWidth
 					&& distance > mViewConfig.getScaledTouchSlop()
-					&& (mLastX - mStartX) > 0
+					&& (x - mStartX) > 0
 					&& distance > mViewConfig.getScaledPagingTouchSlop()) {
 				// open
-				mIsBeingDragged = true;
-			} else if (mStartX >= mScreenWidth - mBezelSwipeWidth
-					&& distance > mViewConfig.getScaledTouchSlop()
-					&& (mStartX - mLastX) > 0
-					&& distance > mViewConfig.getScaledPagingTouchSlop()) {
-				// close
+				// Log.d(TAG, "open gesture");
 				mIsBeingDragged = true;
 			}
+			mLastX = x;
+			mLastY = y;
 			break;
+		case MotionEvent.ACTION_CANCEL:
+			// Log.d(TAG, "onInterceptTouchEvent CANCEL x:" + ev.getX() + ",y:"
+			// + ev.getY());
+			mIsBeingDragged = false;
 		}
-		if (!mIsBeingDragged) {
-			// track the velocity as long as we aren't dragging.
-			// once we start a real drag we will track in onTouchEvent
-			if (mVelocityTracker == null) {
-				mVelocityTracker = VelocityTracker.obtain();
-			}
-			mVelocityTracker.addMovement(ev);
-		}
+		// Log.d(TAG, "mIsBeingDragged:" + mIsBeingDragged);
 		return mIsBeingDragged;
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if (mVelocityTracker == null) {
-			mVelocityTracker = VelocityTracker.obtain();
-		}
-		mVelocityTracker.addMovement(event);
 		final int action = event.getAction() & MotionEvent.ACTION_MASK;
 		switch (action) {
 		case MotionEvent.ACTION_MOVE: {
-			Log.d(TAG,
-					"onTouchEvent MOVE x:" + event.getX() + ",y:"
-							+ event.getY());
+			final int activePointerIndex = MotionEventCompat.findPointerIndex(
+					event, mActivePointerId);
+			final float x = MotionEventCompat.getX(event, activePointerIndex);
+			final float y = MotionEventCompat.getY(event, activePointerIndex);
 			if (mIsBeingDragged) {
-				final int activePointerIndex = MotionEventCompat
-						.findPointerIndex(event, mActivePointerId);
-				final float x = MotionEventCompat.getX(event,
-						activePointerIndex);
-				final float y = MotionEventCompat.getY(event,
-						activePointerIndex);
+
 				float distance = x - mLastX;
-				Log.d(TAG, "onTouchEvent MOVE distance:" + distance);
+				// Log.d(TAG, "onTouchEvent MOVE distance:" + distance);
 				mHost.offsetLeftAndRight((int) distance);
 				invalidate();
 				mLastX = x;
 				mLastY = y;
+			} else {
+				// Log.d(TAG, "onTouchEvent MOVE x:" + x + ",y:" + y);
+
+				double diff = Math.hypot(x - mStartX, y - mStartY);
+				Log.d(TAG, "diff:" + diff);
+				Log.d(TAG, "mStartX:" + mStartX);
+				Log.d(TAG, "mLastX:" + mLastX);
+				if (mStartX >= mScreenWidth - mBezelSwipeWidth
+						&& (mStartX - x) > 0
+						&& diff > mViewConfig.getScaledTouchSlop()
+						&& diff > mViewConfig.getScaledPagingTouchSlop()) {
+					float distance = x - mLastX;
+					Log.d(TAG, "onTouchEvent MOVE distance:" + distance);
+					mHost.offsetLeftAndRight((int) distance);
+					invalidate();
+					mLastX = x;
+					mLastY = y;
+				}
 			}
 			break;
 		}
 		case MotionEvent.ACTION_UP: {
-			if (mIsBeingDragged) {
-				final int activePointerIndex = MotionEventCompat
-						.findPointerIndex(event, mActivePointerId);
-				final float x = MotionEventCompat.getX(event,
-						activePointerIndex);
-				Log.d(TAG,
-						"onTouchEvent UP x:" + event.getX() + ",y:"
-								+ event.getY());
-				float distance = x - mStartX;
-				if (distance > mMenu.getMeasuredWidth() / 2) {
-					if (!isOpened) {
-						// open
-						mScroller.startScroll(0, 0,
-								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0, 1000);
-						mHandler.post(new Fling(true));
-					} else {
-						// close
-						mScroller.startScroll(0, 0, mMenu.getMeasuredWidth()
-								- mHost.getLeft(), 0, 1000);
-						mHandler.post(new Fling(false));
-					}
+			final int activePointerIndex = MotionEventCompat.findPointerIndex(
+					event, mActivePointerId);
+			final float x = MotionEventCompat.getX(event, activePointerIndex);
+			// Log.d(TAG,
+			// "onTouchEvent UP x:" + event.getX() + ",y:" + event.getY());
+			float distance = Math.abs(x - mStartX);
+			if (distance > mMenu.getMeasuredWidth() / 2) {
+				if (!isOpened) {
+					// open
+					mScroller.startScroll(0, 0,
+							-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0,
+							1000);
+					mHandler.post(new Fling(true));
 				} else {
-					if (!isOpened) {
-						// close
-						mScroller.startScroll(0, 0, mHost.getLeft(), 0, 1000);
-						mHandler.post(new Fling(false));
-					} else {
-						// open
-						mScroller.startScroll(0, 0,
-								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0, 1000);
-						mHandler.post(new Fling(true));
-					}
+					// close
+					mScroller.startScroll(0, 0, mHost.getLeft(), 0, 1000);
+					mHandler.post(new Fling(false));
+				}
+			} else {
+				if (!isOpened) {
+					// close
+					mScroller.startScroll(0, 0, mHost.getLeft(), 0, 1000);
+					mHandler.post(new Fling(false));
+				} else {
+					// open
+					mScroller.startScroll(0, 0,
+							-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0,
+							1000);
+					mHandler.post(new Fling(true));
 				}
 			}
 			break;
@@ -320,19 +312,20 @@ public class RootView extends ViewGroup {
 			mLastX = mStartX = event.getX();
 			mLastY = mStartY = event.getY();
 			mActivePointerId = MotionEventCompat.getPointerId(event, 0);
-			break;
+			return true;
 		case MotionEvent.ACTION_CANCEL:
-			if (mIsBeingDragged) {
-				mIsBeingDragged = false;
-				mActivePointerId = INVALID_POINTER;
-			}
+			// Log.d(TAG,
+			// "onTouchEvent CANCEL x:" + event.getX() + ",y:"
+			// + event.getY());
+			mIsBeingDragged = false;
+			mActivePointerId = INVALID_POINTER;
 			break;
 		case MotionEvent.ACTION_POINTER_DOWN:
 			break;
 		case MotionEvent.ACTION_POINTER_UP:
 			break;
 		}
-		return true;
+		return super.onTouchEvent(event);
 	}
 
 	public void animateClose() {
@@ -401,7 +394,6 @@ public class RootView extends ViewGroup {
 		public void run() {
 			boolean more = mScroller.computeScrollOffset();
 			int x = mScroller.getCurrX();
-			Log.d(TAG, "scroller x:" + x);
 			int diff = x - lastX;
 			if (diff != 0) {
 				isAnimating = true;
