@@ -3,20 +3,17 @@ package org.kidfolk.flyinmenu;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Handler;
-import android.os.Message;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.widget.OverScroller;
-import android.widget.Scroller;
 
 public class RootView extends ViewGroup {
 
@@ -177,28 +174,11 @@ public class RootView extends ViewGroup {
 		 * scrolling there
 		 */
 		final int action = ev.getAction() & MotionEvent.ACTION_MASK;
-		if (action == MotionEvent.ACTION_CANCEL
-				|| action == MotionEvent.ACTION_UP) {
-			mIsBeingDragged = false;
-			mActivePointerId = INVALID_POINTER;
-			return false;
-		}
-
-		if (action != MotionEvent.ACTION_DOWN) {
-			if (mIsBeingDragged) {
-				return true;
-			}
-		}
 
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
-			// Log.d(TAG,
-			// "onInterceptTouchEvent DOWN x:" + ev.getX() + ",y:"
-			// + ev.getY());
-			mStartX = ev.getX();
-			mStartY = ev.getY();
-			mLastX = ev.getX();
-			mLastY = ev.getY();
+			mLastX = mStartX = ev.getX();
+			mLastY = mStartY = ev.getY();
 			mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
 			mIsBeingDragged = false;
 			break;
@@ -213,26 +193,22 @@ public class RootView extends ViewGroup {
 					activePointerId);
 			final float x = MotionEventCompat.getX(ev, pointerIndex);
 			final float y = MotionEventCompat.getY(ev, pointerIndex);
-			// Log.d(TAG, "onInterceptTouchEvent MOVE x:" + x + ",y:" + y);
 
 			double distance = Math.hypot(x - mStartX, y - mStartY);
 			if (mStartX <= mBezelSwipeWidth
 					&& distance > mViewConfig.getScaledTouchSlop()
 					&& (x - mStartX) > 0
-					&& distance > mViewConfig.getScaledPagingTouchSlop()) {
-				// open
-				// Log.d(TAG, "open gesture");
+					&& distance > mViewConfig.getScaledPagingTouchSlop()
+					&& !isOpened) {
+				// open gesture
 				mIsBeingDragged = true;
 			}
 			mLastX = x;
 			mLastY = y;
 			break;
 		case MotionEvent.ACTION_CANCEL:
-			// Log.d(TAG, "onInterceptTouchEvent CANCEL x:" + ev.getX() + ",y:"
-			// + ev.getY());
 			mIsBeingDragged = false;
 		}
-		// Log.d(TAG, "mIsBeingDragged:" + mIsBeingDragged);
 		return mIsBeingDragged;
 	}
 
@@ -246,64 +222,54 @@ public class RootView extends ViewGroup {
 			final float x = MotionEventCompat.getX(event, activePointerIndex);
 			final float y = MotionEventCompat.getY(event, activePointerIndex);
 			if (mIsBeingDragged) {
-
 				float distance = x - mLastX;
-				// Log.d(TAG, "onTouchEvent MOVE distance:" + distance);
 				mHost.offsetLeftAndRight((int) distance);
-				invalidate();
-				mLastX = x;
-				mLastY = y;
+				postInvalidate();
 			} else {
-				// Log.d(TAG, "onTouchEvent MOVE x:" + x + ",y:" + y);
-
 				double diff = Math.hypot(x - mStartX, y - mStartY);
-				Log.d(TAG, "diff:" + diff);
-				Log.d(TAG, "mStartX:" + mStartX);
-				Log.d(TAG, "mLastX:" + mLastX);
 				if (mStartX >= mScreenWidth - mBezelSwipeWidth
 						&& (mStartX - x) > 0
 						&& diff > mViewConfig.getScaledTouchSlop()
-						&& diff > mViewConfig.getScaledPagingTouchSlop()) {
-					float distance = x - mLastX;
-					Log.d(TAG, "onTouchEvent MOVE distance:" + distance);
-					mHost.offsetLeftAndRight((int) distance);
-					invalidate();
-					mLastX = x;
-					mLastY = y;
+						&& diff > mViewConfig.getScaledPagingTouchSlop()
+						&& isOpened) {
+					mIsBeingDragged = true;
 				}
 			}
+			mLastX = x;
+			mLastY = y;
 			break;
 		}
 		case MotionEvent.ACTION_UP: {
-			final int activePointerIndex = MotionEventCompat.findPointerIndex(
-					event, mActivePointerId);
-			final float x = MotionEventCompat.getX(event, activePointerIndex);
-			// Log.d(TAG,
-			// "onTouchEvent UP x:" + event.getX() + ",y:" + event.getY());
-			float distance = Math.abs(x - mStartX);
-			if (distance > mMenu.getMeasuredWidth() / 2) {
-				if (!isOpened) {
-					// open
-					mScroller.startScroll(0, 0,
-							-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0,
-							1000);
-					mHandler.post(new Fling(true));
+			if (mIsBeingDragged) {
+				final int activePointerIndex = MotionEventCompat
+						.findPointerIndex(event, mActivePointerId);
+				final float x = MotionEventCompat.getX(event,
+						activePointerIndex);
+				float distance = Math.abs(x - mStartX);
+				if (distance > mMenu.getMeasuredWidth() / 2) {
+					if (!isOpened) {
+						// open
+						mScroller.startScroll(0, 0,
+								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
+								0, 500);
+						mHandler.post(new Fling(true));
+					} else {
+						// close
+						mScroller.startScroll(0, 0, mHost.getLeft(), 0, 500);
+						mHandler.post(new Fling(false));
+					}
 				} else {
-					// close
-					mScroller.startScroll(0, 0, mHost.getLeft(), 0, 1000);
-					mHandler.post(new Fling(false));
-				}
-			} else {
-				if (!isOpened) {
-					// close
-					mScroller.startScroll(0, 0, mHost.getLeft(), 0, 1000);
-					mHandler.post(new Fling(false));
-				} else {
-					// open
-					mScroller.startScroll(0, 0,
-							-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0,
-							1000);
-					mHandler.post(new Fling(true));
+					if (!isOpened) {
+						// close
+						mScroller.startScroll(0, 0, mHost.getLeft(), 0, 500);
+						mHandler.post(new Fling(false));
+					} else {
+						// open
+						mScroller.startScroll(0, 0,
+								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
+								0, 500);
+						mHandler.post(new Fling(true));
+					}
 				}
 			}
 			break;
@@ -314,9 +280,6 @@ public class RootView extends ViewGroup {
 			mActivePointerId = MotionEventCompat.getPointerId(event, 0);
 			return true;
 		case MotionEvent.ACTION_CANCEL:
-			// Log.d(TAG,
-			// "onTouchEvent CANCEL x:" + event.getX() + ",y:"
-			// + event.getY());
 			mIsBeingDragged = false;
 			mActivePointerId = INVALID_POINTER;
 			break;
