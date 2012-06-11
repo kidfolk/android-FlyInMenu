@@ -13,6 +13,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
@@ -31,6 +32,7 @@ public class RootView extends ViewGroup {
 	private int mShadowWidth;
 
 	private OverScroller mScroller;
+	private VelocityTracker mVelocityTracker;
 	private int mState = MENU_CLOSED;
 	private static final int MENU_CLOSED = 1;
 	private static final int MENU_OPENED = 2;
@@ -84,7 +86,8 @@ public class RootView extends ViewGroup {
 				TypedValue.COMPLEX_UNIT_DIP, SHADOW_WIDTH, getResources()
 						.getDisplayMetrics());
 		mViewConfig = ViewConfiguration.get(context);
-		// mMaximumVelocity = mViewConfig.getScaledMaximumFlingVelocity();
+		mMaximumVelocity = mViewConfig.getScaledMaximumFlingVelocity();
+		mMinimumVelocity = mViewConfig.getScaledMinimumFlingVelocity();
 		Resources res = getResources();
 		mScreenWidth = res.getDisplayMetrics().widthPixels;
 		mScroller = new OverScroller(context, sInterpolator);
@@ -229,7 +232,8 @@ public class RootView extends ViewGroup {
 	 * drags/flings if multiple pointers are used.
 	 */
 	private int mActivePointerId = INVALID_POINTER_ID;
-	// private float mMaximumVelocity;
+	private float mMaximumVelocity;
+	private float mMinimumVelocity;
 	/**
 	 * Sentinel value for no current active pointer. Used by
 	 * {@link #mActivePointerId}.
@@ -281,11 +285,23 @@ public class RootView extends ViewGroup {
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
 			break;
 		}
+
+		if ((mState & MENU_DRAGGING) == 0) {
+			if (mVelocityTracker == null) {
+				mVelocityTracker = VelocityTracker.obtain();
+			}
+			mVelocityTracker.addMovement(ev);
+		}
+
 		return (mState & MENU_DRAGGING) != 0;
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		if (mVelocityTracker == null) {
+			mVelocityTracker = VelocityTracker.obtain();
+		}
+		mVelocityTracker.addMovement(event);
 		final int action = event.getAction() & MotionEvent.ACTION_MASK;
 		switch (action) {
 		case MotionEvent.ACTION_MOVE: {
@@ -320,35 +336,45 @@ public class RootView extends ViewGroup {
 		case MotionEvent.ACTION_UP: {
 			Log.d(TAG, "onTouchEvent: ACTION_UP");
 			if ((mState & MENU_DRAGGING) != 0) {
-				final int pointerIndex = event
-						.findPointerIndex(mActivePointerId);
-				final float x = event.getX(pointerIndex);
-				float distance = Math.abs(x - mStartX);
-				if (distance > mMenu.getMeasuredWidth() / 2) {
+				final VelocityTracker velocityTracker = mVelocityTracker;
+				velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+				float xVelocity = Math.abs(velocityTracker.getXVelocity());
+				if (xVelocity > mMinimumVelocity) {
+					// velocity is greater than the minimum velocity
 					if ((mState & MENU_CLOSED) != 0) {
 						// open
-						mScroller.startScroll(0, 0,
+						startScroll(0, 0,
 								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0, ANIMATION_DURATION);
-						mHandler.post(new Fling(true));
+								0);
 					} else if ((mState & MENU_OPENED) != 0) {
 						// close
-						mScroller.startScroll(0, 0, mHost.getLeft(), 0,
-								ANIMATION_DURATION);
-						mHandler.post(new Fling(false));
+						startScroll(0, 0, mHost.getLeft(), 0);
 					}
 				} else {
-					if ((mState & MENU_CLOSED) != 0) {
-						// close
-						mScroller.startScroll(0, 0, mHost.getLeft(), 0,
-								ANIMATION_DURATION);
-						mHandler.post(new Fling(false));
-					} else if ((mState & MENU_OPENED) != 0) {
-						// open
-						mScroller.startScroll(0, 0,
-								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0, ANIMATION_DURATION);
-						mHandler.post(new Fling(true));
+					final int pointerIndex = event
+							.findPointerIndex(mActivePointerId);
+					final float x = event.getX(pointerIndex);
+					float diff = Math.abs(x - mStartX);
+					if (diff > mMenu.getMeasuredWidth() / 2) {
+						if ((mState & MENU_CLOSED) != 0) {
+							// open
+							startScroll(0, 0,
+									-(mMenu.getMeasuredWidth() - mHost
+											.getLeft()), 0);
+						} else if ((mState & MENU_OPENED) != 0) {
+							// close
+							startScroll(0, 0, mHost.getLeft(), 0);
+						}
+					} else {
+						if ((mState & MENU_CLOSED) != 0) {
+							// close
+							startScroll(0, 0, mHost.getLeft(), 0);
+						} else if ((mState & MENU_OPENED) != 0) {
+							// open
+							startScroll(0, 0,
+									-(mMenu.getMeasuredWidth() - mHost
+											.getLeft()), 0);
+						}
 					}
 				}
 			}
@@ -379,6 +405,9 @@ public class RootView extends ViewGroup {
 				mLastX = event.getX(newPointerIndex);
 				mLastY = event.getY(newPointerIndex);
 				mActivePointerId = event.getPointerId(newPointerIndex);
+				if (mVelocityTracker != null) {
+					mVelocityTracker.clear();
+				}
 			}
 			break;
 		}
@@ -386,20 +415,21 @@ public class RootView extends ViewGroup {
 		return super.onTouchEvent(event);
 	}
 
+	private void startScroll(int startX, int startY, int dx, int dy) {
+		mScroller.startScroll(startX, startY, dx, dy, ANIMATION_DURATION);
+		mHandler.post(new Scrolling(dx > 0 ? false : true));
+	}
+
 	public void animateClose() {
-		if ((mState & MENU_CLOSED) != 0)
+		if ((mState & MENU_CLOSED) != 0 || (mState & MENU_FLINGING) != 0)
 			return;
-		mScroller.startScroll(0, 0, mMenu.getMeasuredWidth(), 0,
-				ANIMATION_DURATION);
-		mHandler.post(new Fling(false));
+		startScroll(0, 0, mMenu.getMeasuredWidth(), 0);
 	}
 
 	public void animateOpen() {
-		if ((mState & MENU_OPENED) != 0)
+		if ((mState & MENU_OPENED) != 0 || (mState & MENU_FLINGING) != 0)
 			return;
-		mScroller.startScroll(0, 0, -mMenu.getMeasuredWidth(), 0,
-				ANIMATION_DURATION);
-		mHandler.post(new Fling(true));
+		startScroll(0, 0, -mMenu.getMeasuredWidth(), 0);
 	}
 
 	public void animateToggle() {
@@ -442,11 +472,11 @@ public class RootView extends ViewGroup {
 
 	private Handler mHandler = new Handler();
 
-	class Fling implements Runnable {
+	class Scrolling implements Runnable {
 		private int lastX;
 		boolean open;
 
-		Fling(boolean open) {
+		Scrolling(boolean open) {
 			this.open = open;
 		}
 
