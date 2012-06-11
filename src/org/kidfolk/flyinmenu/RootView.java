@@ -217,6 +217,11 @@ public class RootView extends ViewGroup {
 			final float y = event.getY(pointerIndex);
 			if (mIsBeingDragged) {
 				float distance = x - mLastX;
+				int right = mHost.getRight();
+				if(right+distance<mHost.getMeasuredWidth()){
+					//修正host左边界移出屏幕范围
+					distance = mHost.getMeasuredWidth()-right;
+				}
 				mHost.offsetLeftAndRight((int) distance);
 				postInvalidate();
 			} else {
