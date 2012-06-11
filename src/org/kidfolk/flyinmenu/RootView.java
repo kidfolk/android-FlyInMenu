@@ -4,8 +4,9 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -35,8 +36,9 @@ public class RootView extends ViewGroup {
 	private static final int MENU_OPENED = 2;
 	private static final int MENU_DRAGGING = 4;
 	private static final int MENU_FLINGING = 8;
-	
+
 	private Drawable mShadowDrawable;
+	private Paint mMenuOverlayPaint;
 
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
 	private static final int ANIMATION_DURATION = 500;
@@ -80,14 +82,16 @@ public class RootView extends ViewGroup {
 						.getDisplayMetrics());
 		mShadowWidth = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, SHADOW_WIDTH, getResources()
-				.getDisplayMetrics());
+						.getDisplayMetrics());
 		mViewConfig = ViewConfiguration.get(context);
 		// mMaximumVelocity = mViewConfig.getScaledMaximumFlingVelocity();
 		Resources res = getResources();
 		mScreenWidth = res.getDisplayMetrics().widthPixels;
 		mScroller = new OverScroller(context, sInterpolator);
 		mShadowDrawable = res.getDrawable(R.drawable.host_shadow);
-		mShadowDrawable.setBounds(0, 0, mShadowWidth, res.getDisplayMetrics().heightPixels);
+		mShadowDrawable.setBounds(0, 0, mShadowWidth,
+				res.getDisplayMetrics().heightPixels);
+		mMenuOverlayPaint = new Paint();
 	}
 
 	public RootView(Context context, AttributeSet attrs) {
@@ -148,20 +152,64 @@ public class RootView extends ViewGroup {
 		final int hostHeight = host.getMeasuredHeight();
 		host.layout(0, 0, hostWidth, hostHeight);
 	}
-	
+
 	@Override
 	protected void dispatchDraw(Canvas canvas) {
 		super.dispatchDraw(canvas);
-		
-		if(mState!=MENU_CLOSED){
-			//the menu is not closed.that means we can potentially see the host
-			//overlapping it.let's add a tiny gradient to indicate the host is
+
+		if (mState != MENU_CLOSED) {
+			// the menu is not closed.that means we can potentially see the host
+			// overlapping it.let's add a tiny gradient to indicate the host is
 			// sliding over the menu
-			Log.d(TAG, "draw shadow");
 			canvas.save();
-			canvas.translate(mHost.getLeft()-mShadowDrawable.getBounds().right, 0);
+			canvas.translate(mHost.getLeft()
+					- mShadowDrawable.getBounds().right, 0);
 			mShadowDrawable.draw(canvas);
 			canvas.restore();
+
+			final int menuWidth = mMenu.getWidth();
+			if (menuWidth != 0) {
+				final float opennessRatio = (menuWidth - mHost.getLeft())
+						/ (float) menuWidth;
+
+				// we also draw an overlay over the menu indicating the menu is
+				// in the process of being visible or invisible
+				drawMenuOverlay(canvas, opennessRatio);
+
+				// finally we draw an arrow indicating the feature we are
+				// currently int
+				drawMenuArrow(canvas, opennessRatio);
+
+				// offset menu to implement the parallax effect
+				mMenu.offsetLeftAndRight((int) (-opennessRatio * menuWidth * PARALLAX_SPEED_RATIO)
+						- mMenu.getLeft());
+			}
+		}
+	}
+
+	private static final float PARALLAX_SPEED_RATIO = 0.25f;
+
+	private void drawMenuArrow(Canvas canvas, float opennessRatio) {
+		// Rect outRect = new Rect();
+		// ListView listView = (ListView) mMenu.findViewById(R.id.list);
+		// View view = listView.getChildAt(2);
+		// view.getDrawingRect(outRect);
+		// Log.d(TAG, "outRect left:" + outRect.left + ",right:" + outRect.right
+		// + ",top:" + outRect.top + ",bottom:" + outRect.bottom);
+		// offsetDescendantRectToMyCoords(mHost, outRect);
+		// Log.d(TAG, "outRect left:" + outRect.left + ",right:" + outRect.right
+		// + ",top:" + outRect.top + ",bottom:" + outRect.bottom);
+	}
+
+	private static final int MAXIMUM_MENU_ALPHA_OVERLAY = 170;
+
+	private void drawMenuOverlay(Canvas canvas, float opennessRatio) {
+		final Paint menuOverlayPaint = mMenuOverlayPaint;
+		final int alpha = (int) (MAXIMUM_MENU_ALPHA_OVERLAY * opennessRatio);
+		if (alpha > 0) {
+			menuOverlayPaint.setColor(Color.argb(alpha, 0, 0, 0));
+			canvas.drawRect(0, 0, mHost.getLeft(), getHeight(),
+					menuOverlayPaint);
 		}
 	}
 
