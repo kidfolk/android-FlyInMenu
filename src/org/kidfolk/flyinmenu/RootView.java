@@ -1,7 +1,11 @@
 package org.kidfolk.flyinmenu;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -23,6 +27,7 @@ public class RootView extends ViewGroup {
 	private int mHostRemainWidth;
 	private int mBezelSwipeWidth;
 	private int mScreenWidth;
+	private int mShadowWidth;
 
 	private OverScroller mScroller;
 	private int mState = MENU_CLOSED;
@@ -30,11 +35,14 @@ public class RootView extends ViewGroup {
 	private static final int MENU_OPENED = 2;
 	private static final int MENU_DRAGGING = 4;
 	private static final int MENU_FLINGING = 8;
+	
+	private Drawable mShadowDrawable;
 
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
 	private static final int ANIMATION_DURATION = 500;
 	private static final int HOST_REMAIN_WIDTH = 44;
 	private static final int BEZEL_SWIPE_WIDTH = 30;
+	private static final int SHADOW_WIDTH = 6;
 	private static final Interpolator sInterpolator = new Interpolator() {
 
 		@Override
@@ -70,10 +78,16 @@ public class RootView extends ViewGroup {
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, BEZEL_SWIPE_WIDTH, getResources()
 						.getDisplayMetrics());
+		mShadowWidth = (int) TypedValue.applyDimension(
+				TypedValue.COMPLEX_UNIT_DIP, SHADOW_WIDTH, getResources()
+				.getDisplayMetrics());
 		mViewConfig = ViewConfiguration.get(context);
 		// mMaximumVelocity = mViewConfig.getScaledMaximumFlingVelocity();
-		mScreenWidth = getResources().getDisplayMetrics().widthPixels;
+		Resources res = getResources();
+		mScreenWidth = res.getDisplayMetrics().widthPixels;
 		mScroller = new OverScroller(context, sInterpolator);
+		mShadowDrawable = res.getDrawable(R.drawable.host_shadow);
+		mShadowDrawable.setBounds(0, 0, mShadowWidth, res.getDisplayMetrics().heightPixels);
 	}
 
 	public RootView(Context context, AttributeSet attrs) {
@@ -133,6 +147,22 @@ public class RootView extends ViewGroup {
 		final int hostWidth = host.getMeasuredWidth();
 		final int hostHeight = host.getMeasuredHeight();
 		host.layout(0, 0, hostWidth, hostHeight);
+	}
+	
+	@Override
+	protected void dispatchDraw(Canvas canvas) {
+		super.dispatchDraw(canvas);
+		
+		if(mState!=MENU_CLOSED){
+			//the menu is not closed.that means we can potentially see the host
+			//overlapping it.let's add a tiny gradient to indicate the host is
+			// sliding over the menu
+			Log.d(TAG, "draw shadow");
+			canvas.save();
+			canvas.translate(mHost.getLeft()-mShadowDrawable.getBounds().right, 0);
+			mShadowDrawable.draw(canvas);
+			canvas.restore();
+		}
 	}
 
 	@Override
