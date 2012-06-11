@@ -13,10 +13,15 @@
         android:layout_height="match_parent"
         layout="@layout/menu_item" />
 
-    <include
+    <!-- <include
         android:id="@+id/host"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        layout="@layout/host_item" />
+        layout="@layout/host_item" /> -->
+
+    <FrameLayout
+        android:id="@+id/host"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </org.kidfolk.flyinmenu.RootView>

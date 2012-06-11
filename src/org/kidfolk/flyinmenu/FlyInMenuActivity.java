@@ -1,8 +1,8 @@
 package org.kidfolk.flyinmenu;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -10,13 +10,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class FlyInMenuActivity extends Activity {
+public class FlyInMenuActivity extends FragmentActivity {
 	private RootView mRootView;
-	private ImageView mToggle;
 	private static final String TAG = "FlyInMenuActivity";
 
 	/** Called when the activity is first created. */
@@ -24,20 +22,18 @@ public class FlyInMenuActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-
+		
+		getSupportFragmentManager().beginTransaction().add(R.id.host, new HostFragment()).commit();
+		
 		ListView listView = (ListView) findViewById(R.id.list);
 		listView.setAdapter(new NavigationItemAdapter(this
 				.getApplicationContext()));
 
 		mRootView = (RootView) findViewById(R.id.root);
-		mToggle = (ImageView) findViewById(R.id.toggle);
-		mToggle.setOnClickListener(new View.OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-				mRootView.animateToggle();
-			}
-		});
+	}
+	
+	RootView getRootView(){
+		return mRootView;
 	}
 
 	@Override
