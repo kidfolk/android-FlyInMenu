@@ -3,7 +3,6 @@ package org.kidfolk.flyinmenu;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Handler;
-import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -31,6 +30,9 @@ public class RootView extends ViewGroup {
 	private int mBezelSwipeWidth;
 	private int mScreenWidth;
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
+	private static final int ANIMATION_DURATION = 500;
+	private static final int HOST_REMAIN_WIDTH = 44;
+	private static final int BEZEL_SWIPE_WIDTH = 30;
 	private static final Interpolator sInterpolator = new Interpolator() {
 
 		@Override
@@ -61,13 +63,13 @@ public class RootView extends ViewGroup {
 		a.recycle();
 
 		mHostRemainWidth = (int) TypedValue.applyDimension(
-				TypedValue.COMPLEX_UNIT_DIP, 44, getResources()
+				TypedValue.COMPLEX_UNIT_DIP, HOST_REMAIN_WIDTH, getResources()
 						.getDisplayMetrics());
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
-				TypedValue.COMPLEX_UNIT_DIP, 30, getResources()
+				TypedValue.COMPLEX_UNIT_DIP, BEZEL_SWIPE_WIDTH, getResources()
 						.getDisplayMetrics());
 		mViewConfig = ViewConfiguration.get(context);
-		mMaximumVelocity = mViewConfig.getScaledMaximumFlingVelocity();
+		// mMaximumVelocity = mViewConfig.getScaledMaximumFlingVelocity();
 		mScreenWidth = getResources().getDisplayMetrics().widthPixels;
 		mScroller = new OverScroller(context, sInterpolator);
 	}
@@ -89,7 +91,6 @@ public class RootView extends ViewGroup {
 			throw new IllegalArgumentException(
 					"The host attribute is must refer to an existing child.");
 		}
-		// mMenu.setVisibility(View.GONE);
 	}
 
 	@Override
@@ -135,14 +136,7 @@ public class RootView extends ViewGroup {
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		Log.d(TAG, "keyCode:" + keyCode);
-		// return true;
 		return super.onKeyDown(keyCode, event);
-	}
-
-	@Override
-	public boolean dispatchTouchEvent(MotionEvent ev) {
-		// TODO Auto-generated method stub
-		return super.dispatchTouchEvent(ev);
 	}
 
 	private float mStartX;
@@ -155,13 +149,13 @@ public class RootView extends ViewGroup {
 	 * ID of the active pointer. This is used to retain consistency during
 	 * drags/flings if multiple pointers are used.
 	 */
-	private int mActivePointerId = INVALID_POINTER;
-	private float mMaximumVelocity;
+	private int mActivePointerId = INVALID_POINTER_ID;
+	// private float mMaximumVelocity;
 	/**
 	 * Sentinel value for no current active pointer. Used by
 	 * {@link #mActivePointerId}.
 	 */
-	private static final int INVALID_POINTER = -1;
+	private static final int INVALID_POINTER_ID = -1;
 
 	/**
 	 * when can a gesture be considered as a swipe
@@ -169,7 +163,7 @@ public class RootView extends ViewGroup {
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
 		/**
-		 * This method just determines whether we want ot intercept the motion.
+		 * This method just determines whether we want to intercept the motion.
 		 * If we return true.onTouchEvent will be called and we do the actual
 		 * scrolling there
 		 */
@@ -177,22 +171,16 @@ public class RootView extends ViewGroup {
 
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
+			Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
 			mLastX = mStartX = ev.getX();
 			mLastY = mStartY = ev.getY();
-			mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
+			mActivePointerId = ev.getPointerId(0);
 			mIsBeingDragged = false;
 			break;
 		case MotionEvent.ACTION_MOVE:
-
-			final int activePointerId = mActivePointerId;
-			if (activePointerId == INVALID_POINTER) {
-				// if we don't have a valid id,the touch down wasn't no content
-				break;
-			}
-			final int pointerIndex = MotionEventCompat.findPointerIndex(ev,
-					activePointerId);
-			final float x = MotionEventCompat.getX(ev, pointerIndex);
-			final float y = MotionEventCompat.getY(ev, pointerIndex);
+			final int pointerIndex = ev.findPointerIndex(mActivePointerId);
+			final float x = ev.getX(pointerIndex);
+			final float y = ev.getY(pointerIndex);
 
 			double distance = Math.hypot(x - mStartX, y - mStartY);
 			if (mStartX <= mBezelSwipeWidth
@@ -207,7 +195,12 @@ public class RootView extends ViewGroup {
 			mLastY = y;
 			break;
 		case MotionEvent.ACTION_CANCEL:
+			Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
 			mIsBeingDragged = false;
+
+		case MotionEvent.ACTION_POINTER_UP:
+			Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
+			break;
 		}
 		return mIsBeingDragged;
 	}
@@ -217,10 +210,11 @@ public class RootView extends ViewGroup {
 		final int action = event.getAction() & MotionEvent.ACTION_MASK;
 		switch (action) {
 		case MotionEvent.ACTION_MOVE: {
-			final int activePointerIndex = MotionEventCompat.findPointerIndex(
-					event, mActivePointerId);
-			final float x = MotionEventCompat.getX(event, activePointerIndex);
-			final float y = MotionEventCompat.getY(event, activePointerIndex);
+			// Log.d(TAG, "mActivePointerId:"+mActivePointerId);
+			final int pointerIndex = event.findPointerIndex(mActivePointerId);
+			// Log.d(TAG, "pointerIndex:"+pointerIndex);
+			final float x = event.getX(pointerIndex);
+			final float y = event.getY(pointerIndex);
 			if (mIsBeingDragged) {
 				float distance = x - mLastX;
 				mHost.offsetLeftAndRight((int) distance);
@@ -240,53 +234,71 @@ public class RootView extends ViewGroup {
 			break;
 		}
 		case MotionEvent.ACTION_UP: {
+			Log.d(TAG, "onTouchEvent: ACTION_UP");
 			if (mIsBeingDragged) {
-				final int activePointerIndex = MotionEventCompat
-						.findPointerIndex(event, mActivePointerId);
-				final float x = MotionEventCompat.getX(event,
-						activePointerIndex);
+				final int pointerIndex = event
+						.findPointerIndex(mActivePointerId);
+				final float x = event.getX(pointerIndex);
 				float distance = Math.abs(x - mStartX);
 				if (distance > mMenu.getMeasuredWidth() / 2) {
 					if (!isOpened) {
 						// open
 						mScroller.startScroll(0, 0,
 								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0, 500);
+								0, ANIMATION_DURATION);
 						mHandler.post(new Fling(true));
 					} else {
 						// close
-						mScroller.startScroll(0, 0, mHost.getLeft(), 0, 500);
+						mScroller.startScroll(0, 0, mHost.getLeft(), 0,
+								ANIMATION_DURATION);
 						mHandler.post(new Fling(false));
 					}
 				} else {
 					if (!isOpened) {
 						// close
-						mScroller.startScroll(0, 0, mHost.getLeft(), 0, 500);
+						mScroller.startScroll(0, 0, mHost.getLeft(), 0,
+								ANIMATION_DURATION);
 						mHandler.post(new Fling(false));
 					} else {
 						// open
 						mScroller.startScroll(0, 0,
 								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0, 500);
+								0, ANIMATION_DURATION);
 						mHandler.post(new Fling(true));
 					}
 				}
 			}
+			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		}
 		case MotionEvent.ACTION_DOWN:
+			Log.d(TAG, "onTouchEvent: ACTION_DOWN");
 			mLastX = mStartX = event.getX();
 			mLastY = mStartY = event.getY();
-			mActivePointerId = MotionEventCompat.getPointerId(event, 0);
+			mActivePointerId = event.getPointerId(0);
 			return true;
 		case MotionEvent.ACTION_CANCEL:
+			Log.d(TAG, "onTouchEvent: ACTION_CANCEL");
 			mIsBeingDragged = false;
-			mActivePointerId = INVALID_POINTER;
+			mActivePointerId = INVALID_POINTER_ID;
 			break;
-		case MotionEvent.ACTION_POINTER_DOWN:
+		case MotionEvent.ACTION_POINTER_DOWN: {
 			break;
-		case MotionEvent.ACTION_POINTER_UP:
+		}
+		case MotionEvent.ACTION_POINTER_UP: {
+			final int pointerIndex = event.getActionIndex();
+			final int pointerId = event.getPointerId(pointerIndex);
+			if (pointerId == mActivePointerId) {
+				// this is our active pointer going up.choose a new
+				// active pointer an adjust accordingly.
+				Log.d(TAG, "active pointer going up");
+				final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+				mLastX = event.getX(newPointerIndex);
+				mLastY = event.getY(newPointerIndex);
+				mActivePointerId = event.getPointerId(newPointerIndex);
+			}
 			break;
+		}
 		}
 		return super.onTouchEvent(event);
 	}
@@ -294,14 +306,16 @@ public class RootView extends ViewGroup {
 	public void animateClose() {
 		if (isMoving || isAnimating || !isOpened)
 			return;
-		mScroller.startScroll(0, 0, mMenu.getMeasuredWidth(), 0, 1000);
+		mScroller.startScroll(0, 0, mMenu.getMeasuredWidth(), 0,
+				ANIMATION_DURATION);
 		mHandler.post(new Fling(false));
 	}
 
 	public void animateOpen() {
 		if (isMoving || isAnimating || isOpened)
 			return;
-		mScroller.startScroll(0, 0, -mMenu.getMeasuredWidth(), 0, 1000);
+		mScroller.startScroll(0, 0, -mMenu.getMeasuredWidth(), 0,
+				ANIMATION_DURATION);
 		mHandler.post(new Fling(true));
 	}
 
