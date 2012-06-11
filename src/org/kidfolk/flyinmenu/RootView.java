@@ -21,14 +21,16 @@ public class RootView extends ViewGroup {
 	private int mMenuId;
 	private int mHostId;
 	private int mHostRemainWidth;
-
-	private OverScroller mScroller;
-	private boolean isAnimating;
-	private boolean isMoving;
-	private boolean isOpened;
-
 	private int mBezelSwipeWidth;
 	private int mScreenWidth;
+
+	private OverScroller mScroller;
+	private int mState = MENU_CLOSED;
+	private static final int MENU_CLOSED = 1;
+	private static final int MENU_OPENED = 2;
+	private static final int MENU_DRAGGING = 4;
+	private static final int MENU_FLINGING = 8;
+
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
 	private static final int ANIMATION_DURATION = 500;
 	private static final int HOST_REMAIN_WIDTH = 44;
@@ -144,7 +146,6 @@ public class RootView extends ViewGroup {
 	private float mLastX;
 	private float mLastY;
 	private ViewConfiguration mViewConfig;
-	private boolean mIsBeingDragged;
 	/**
 	 * ID of the active pointer. This is used to retain consistency during
 	 * drags/flings if multiple pointers are used.
@@ -175,7 +176,6 @@ public class RootView extends ViewGroup {
 			mLastX = mStartX = ev.getX();
 			mLastY = mStartY = ev.getY();
 			mActivePointerId = ev.getPointerId(0);
-			mIsBeingDragged = false;
 			break;
 		case MotionEvent.ACTION_MOVE:
 			final int pointerIndex = ev.findPointerIndex(mActivePointerId);
@@ -187,22 +187,23 @@ public class RootView extends ViewGroup {
 					&& distance > mViewConfig.getScaledTouchSlop()
 					&& (x - mStartX) > 0
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& !isOpened) {
+					&& mState == MENU_CLOSED) {
 				// open gesture
-				mIsBeingDragged = true;
+				Log.d(TAG, "open gesture");
+				mState |= MENU_DRAGGING;
 			}
 			mLastX = x;
 			mLastY = y;
 			break;
 		case MotionEvent.ACTION_CANCEL:
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
-			mIsBeingDragged = false;
+			break;
 
 		case MotionEvent.ACTION_POINTER_UP:
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
 			break;
 		}
-		return mIsBeingDragged;
+		return (mState & MENU_DRAGGING) != 0;
 	}
 
 	@Override
@@ -210,17 +211,15 @@ public class RootView extends ViewGroup {
 		final int action = event.getAction() & MotionEvent.ACTION_MASK;
 		switch (action) {
 		case MotionEvent.ACTION_MOVE: {
-			// Log.d(TAG, "mActivePointerId:"+mActivePointerId);
 			final int pointerIndex = event.findPointerIndex(mActivePointerId);
-			// Log.d(TAG, "pointerIndex:"+pointerIndex);
 			final float x = event.getX(pointerIndex);
 			final float y = event.getY(pointerIndex);
-			if (mIsBeingDragged) {
+			if ((mState & MENU_DRAGGING) != 0) {
 				float distance = x - mLastX;
 				int right = mHost.getRight();
-				if(right+distance<mHost.getMeasuredWidth()){
-					//修正host左边界移出屏幕范围
-					distance = mHost.getMeasuredWidth()-right;
+				if (right + distance < mHost.getMeasuredWidth()) {
+					// 修正host左边界移出屏幕范围
+					distance = mHost.getMeasuredWidth() - right;
 				}
 				mHost.offsetLeftAndRight((int) distance);
 				postInvalidate();
@@ -230,8 +229,10 @@ public class RootView extends ViewGroup {
 						&& (mStartX - x) > 0
 						&& diff > mViewConfig.getScaledTouchSlop()
 						&& diff > mViewConfig.getScaledPagingTouchSlop()
-						&& isOpened) {
-					mIsBeingDragged = true;
+						&& mState == MENU_OPENED) {
+					// close gesture
+					Log.d(TAG, "close gesture");
+					mState |= MENU_DRAGGING;
 				}
 			}
 			mLastX = x;
@@ -240,31 +241,31 @@ public class RootView extends ViewGroup {
 		}
 		case MotionEvent.ACTION_UP: {
 			Log.d(TAG, "onTouchEvent: ACTION_UP");
-			if (mIsBeingDragged) {
+			if ((mState & MENU_DRAGGING) != 0) {
 				final int pointerIndex = event
 						.findPointerIndex(mActivePointerId);
 				final float x = event.getX(pointerIndex);
 				float distance = Math.abs(x - mStartX);
 				if (distance > mMenu.getMeasuredWidth() / 2) {
-					if (!isOpened) {
+					if ((mState & MENU_CLOSED) != 0) {
 						// open
 						mScroller.startScroll(0, 0,
 								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
 								0, ANIMATION_DURATION);
 						mHandler.post(new Fling(true));
-					} else {
+					} else if ((mState & MENU_OPENED) != 0) {
 						// close
 						mScroller.startScroll(0, 0, mHost.getLeft(), 0,
 								ANIMATION_DURATION);
 						mHandler.post(new Fling(false));
 					}
 				} else {
-					if (!isOpened) {
+					if ((mState & MENU_CLOSED) != 0) {
 						// close
 						mScroller.startScroll(0, 0, mHost.getLeft(), 0,
 								ANIMATION_DURATION);
 						mHandler.post(new Fling(false));
-					} else {
+					} else if ((mState & MENU_OPENED) != 0) {
 						// open
 						mScroller.startScroll(0, 0,
 								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
@@ -284,7 +285,6 @@ public class RootView extends ViewGroup {
 			return true;
 		case MotionEvent.ACTION_CANCEL:
 			Log.d(TAG, "onTouchEvent: ACTION_CANCEL");
-			mIsBeingDragged = false;
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		case MotionEvent.ACTION_POINTER_DOWN: {
@@ -309,7 +309,7 @@ public class RootView extends ViewGroup {
 	}
 
 	public void animateClose() {
-		if (isMoving || isAnimating || !isOpened)
+		if ((mState & MENU_CLOSED) != 0)
 			return;
 		mScroller.startScroll(0, 0, mMenu.getMeasuredWidth(), 0,
 				ANIMATION_DURATION);
@@ -317,7 +317,7 @@ public class RootView extends ViewGroup {
 	}
 
 	public void animateOpen() {
-		if (isMoving || isAnimating || isOpened)
+		if ((mState & MENU_OPENED) != 0)
 			return;
 		mScroller.startScroll(0, 0, -mMenu.getMeasuredWidth(), 0,
 				ANIMATION_DURATION);
@@ -325,41 +325,41 @@ public class RootView extends ViewGroup {
 	}
 
 	public void animateToggle() {
-		if (isOpened) {
+		if ((mState & MENU_OPENED) != 0) {
 			animateClose();
-		} else {
+		} else if ((mState & MENU_CLOSED) != 0) {
 			animateOpen();
 		}
 	}
 
 	public void close() {
 		mHost.offsetLeftAndRight(-mMenu.getMeasuredWidth());
-		isOpened = false;
+		mState = MENU_CLOSED;
 	}
 
 	public void open() {
 		mHost.offsetLeftAndRight(mMenu.getMeasuredWidth());
-		isOpened = true;
+		mState = MENU_OPENED;
 	}
 
 	public void toggle() {
-		if (isOpened) {
+		if (mState == MENU_OPENED) {
 			close();
-		} else {
+		} else if (mState == MENU_CLOSED) {
 			open();
 		}
 	}
 
 	public boolean isOpened() {
-		return isOpened;
+		return mState == MENU_OPENED;
 	}
 
-	public boolean isMoving() {
-		return isMoving;
+	public boolean isDragging() {
+		return (mState & MENU_DRAGGING) != 0;
 	}
 
-	public boolean isAnimating() {
-		return isAnimating;
+	public boolean isFlinging() {
+		return (mState & MENU_FLINGING) != 0;
 	}
 
 	private Handler mHandler = new Handler();
@@ -378,22 +378,21 @@ public class RootView extends ViewGroup {
 			int x = mScroller.getCurrX();
 			int diff = x - lastX;
 			if (diff != 0) {
-				isAnimating = true;
-				isMoving = true;
+				if ((mState & MENU_DRAGGING) != 0) {
+					mState ^= MENU_DRAGGING;
+				}
+				mState |= MENU_FLINGING;
 				mHost.offsetLeftAndRight(-diff);
 				lastX = x;
-				invalidate();
+				postInvalidate();
 			}
 			if (more) {
 				mHandler.postDelayed(this, ANIMATION_FRAME_DURATION);
 			} else {
-				isAnimating = false;
-				isMoving = false;
-				mIsBeingDragged = false;
 				if (open) {
-					isOpened = true;
+					mState = MENU_OPENED;
 				} else {
-					isOpened = false;
+					mState = MENU_CLOSED;
 				}
 			}
 
