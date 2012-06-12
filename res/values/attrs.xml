@@ -3,5 +3,6 @@
     <declare-styleable name="RootView">
         <attr name="menu" format="reference"/>
         <attr name="host" format="reference"/>
+        <attr name="host_remain_width" format="dimension"/>
     </declare-styleable>
 </resources>
