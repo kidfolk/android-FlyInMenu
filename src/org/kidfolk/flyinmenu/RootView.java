@@ -74,10 +74,11 @@ public class RootView extends ViewGroup {
 		}
 		mMenuId = menuId;
 		mHostId = hostId;
+		float hostRemainWidth = a.getDimension(R.styleable.RootView_host_remain_width, HOST_REMAIN_WIDTH);
 		a.recycle();
 
 		mHostRemainWidth = (int) TypedValue.applyDimension(
-				TypedValue.COMPLEX_UNIT_DIP, HOST_REMAIN_WIDTH, getResources()
+				TypedValue.COMPLEX_UNIT_DIP, hostRemainWidth, getResources()
 						.getDisplayMetrics());
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, BEZEL_SWIPE_WIDTH, getResources()
@@ -315,11 +316,17 @@ public class RootView extends ViewGroup {
 					// 修正host左边界移出屏幕范围
 					distance = mHost.getMeasuredWidth() - right;
 				}
+				int left = mHost.getLeft();
+				if(left+distance>mMenu.getMeasuredWidth()){
+					//修正menu右边界超过menu的宽度
+					distance = mMenu.getMeasuredWidth()-left;
+				}
+				
 				mHost.offsetLeftAndRight((int) distance);
 				postInvalidate();
 			} else {
 				double diff = Math.hypot(x - mStartX, y - mStartY);
-				if (mStartX >= mScreenWidth - mBezelSwipeWidth
+				if (mStartX >= mScreenWidth - mHostRemainWidth
 						&& (mStartX - x) > 0
 						&& diff > mViewConfig.getScaledTouchSlop()
 						&& diff > mViewConfig.getScaledPagingTouchSlop()
