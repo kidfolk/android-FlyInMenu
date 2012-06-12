@@ -74,7 +74,8 @@ public class RootView extends ViewGroup {
 		}
 		mMenuId = menuId;
 		mHostId = hostId;
-		float hostRemainWidth = a.getDimension(R.styleable.RootView_host_remain_width, HOST_REMAIN_WIDTH);
+		float hostRemainWidth = a.getDimension(
+				R.styleable.RootView_host_remain_width, HOST_REMAIN_WIDTH);
 		a.recycle();
 
 		mHostRemainWidth = (int) TypedValue.applyDimension(
@@ -119,6 +120,7 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		Log.d(TAG, "onMeasure");
 		int maxHeight = 0;
 		int maxWidth = 0;
 
@@ -154,7 +156,11 @@ public class RootView extends ViewGroup {
 		final View host = mHost;
 		final int hostWidth = host.getMeasuredWidth();
 		final int hostHeight = host.getMeasuredHeight();
-		host.layout(0, 0, hostWidth, hostHeight);
+		if ((mState & MENU_OPENED) != 0) {
+			host.layout(menuWidth, 0, menuWidth + hostWidth, hostHeight);
+		} else {
+			host.layout(0, 0, hostWidth, hostHeight);
+		}
 	}
 
 	@Override
@@ -317,11 +323,11 @@ public class RootView extends ViewGroup {
 					distance = mHost.getMeasuredWidth() - right;
 				}
 				int left = mHost.getLeft();
-				if(left+distance>mMenu.getMeasuredWidth()){
-					//修正menu右边界超过menu的宽度
-					distance = mMenu.getMeasuredWidth()-left;
+				if (left + distance > mMenu.getMeasuredWidth()) {
+					// 修正menu右边界超过menu的宽度
+					distance = mMenu.getMeasuredWidth() - left;
 				}
-				
+
 				mHost.offsetLeftAndRight((int) distance);
 				postInvalidate();
 			} else {
