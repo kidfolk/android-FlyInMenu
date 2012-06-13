@@ -46,7 +46,7 @@ public class RootView extends ViewGroup {
 	private static final int ANIMATION_DURATION = 500;
 	private static final int HOST_REMAIN_WIDTH = 44;//dp
 	private static final int BEZEL_SWIPE_WIDTH = 30;//dp
-	private static final int SHADOW_WIDTH = 6;//dp
+	private static final int SHADOW_WIDTH = 3;//dp
 	private static final Interpolator sInterpolator = new Interpolator() {
 
 		@Override
