@@ -44,9 +44,9 @@ public class RootView extends ViewGroup {
 
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
 	private static final int ANIMATION_DURATION = 500;
-	private static final int HOST_REMAIN_WIDTH = 44;
-	private static final int BEZEL_SWIPE_WIDTH = 30;
-	private static final int SHADOW_WIDTH = 6;
+	private static final int HOST_REMAIN_WIDTH = 44;//dp
+	private static final int BEZEL_SWIPE_WIDTH = 30;//dp
+	private static final int SHADOW_WIDTH = 6;//dp
 	private static final Interpolator sInterpolator = new Interpolator() {
 
 		@Override
@@ -74,13 +74,10 @@ public class RootView extends ViewGroup {
 		}
 		mMenuId = menuId;
 		mHostId = hostId;
-		float hostRemainWidth = a.getDimension(
+		mHostRemainWidth = (int) a.getDimension(
 				R.styleable.RootView_host_remain_width, HOST_REMAIN_WIDTH);
 		a.recycle();
 
-		mHostRemainWidth = (int) TypedValue.applyDimension(
-				TypedValue.COMPLEX_UNIT_DIP, hostRemainWidth, getResources()
-						.getDisplayMetrics());
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, BEZEL_SWIPE_WIDTH, getResources()
 						.getDisplayMetrics());
