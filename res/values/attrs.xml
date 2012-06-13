@@ -4,5 +4,6 @@
         <attr name="menu" format="reference"/>
         <attr name="host" format="reference"/>
         <attr name="host_remain_width" format="dimension"/>
+        <attr name="open" format="boolean"/>
     </declare-styleable>
 </resources>

@@ -33,20 +33,21 @@ public class RootView extends ViewGroup {
 
 	private OverScroller mScroller;
 	private VelocityTracker mVelocityTracker;
-	private int mState = MENU_CLOSED;
+	private int mState;
 	private static final int MENU_CLOSED = 1;
 	private static final int MENU_OPENED = 2;
 	private static final int MENU_DRAGGING = 4;
 	private static final int MENU_FLINGING = 8;
+	private boolean mGestureToRight = false;
 
 	private Drawable mShadowDrawable;
 	private Paint mMenuOverlayPaint;
 
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
 	private static final int ANIMATION_DURATION = 500;
-	private static final int HOST_REMAIN_WIDTH = 44;//dp
-	private static final int BEZEL_SWIPE_WIDTH = 30;//dp
-	private static final int SHADOW_WIDTH = 3;//dp
+	private static final int HOST_REMAIN_WIDTH = 44;// dp
+	private static final int BEZEL_SWIPE_WIDTH = 30;// dp
+	private static final int SHADOW_WIDTH = 3;// dp
 	private static final Interpolator sInterpolator = new Interpolator() {
 
 		@Override
@@ -76,6 +77,12 @@ public class RootView extends ViewGroup {
 		mHostId = hostId;
 		mHostRemainWidth = (int) a.getDimension(
 				R.styleable.RootView_host_remain_width, HOST_REMAIN_WIDTH);
+		boolean open = a.getBoolean(R.styleable.RootView_open, false);
+		if (open) {
+			mState = MENU_OPENED;
+		} else {
+			mState = MENU_CLOSED;
+		}
 		a.recycle();
 
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
@@ -269,8 +276,9 @@ public class RootView extends ViewGroup {
 			final float y = ev.getY(pointerIndex);
 
 			double distance = Math.hypot(x - mStartX, y - mStartY);
-			if (mStartX <= mBezelSwipeWidth
-					&& distance > mViewConfig.getScaledTouchSlop()
+			if (/*
+				 * mStartX <= mBezelSwipeWidth &&
+				 */distance > mViewConfig.getScaledTouchSlop()
 					&& (x - mStartX) > 0
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
 					&& mState == MENU_CLOSED) {
@@ -325,12 +333,22 @@ public class RootView extends ViewGroup {
 					distance = mMenu.getMeasuredWidth() - left;
 				}
 
+				// 纪录最终手势方向
+				if (distance > 0) {
+					// user want open
+					mGestureToRight = true;
+				} else {
+					// user want close
+					mGestureToRight = false;
+				}
+
 				mHost.offsetLeftAndRight((int) distance);
 				postInvalidate();
 			} else {
 				double diff = Math.hypot(x - mStartX, y - mStartY);
-				if (mStartX >= mScreenWidth - mHostRemainWidth
-						&& (mStartX - x) > 0
+				if (/*
+					 * mStartX >= mScreenWidth - mHostRemainWidth &&
+					 */(mStartX - x) > 0
 						&& diff > mViewConfig.getScaledTouchSlop()
 						&& diff > mViewConfig.getScaledPagingTouchSlop()
 						&& mState == MENU_OPENED) {
@@ -345,50 +363,8 @@ public class RootView extends ViewGroup {
 		}
 		case MotionEvent.ACTION_UP: {
 			Log.d(TAG, "onTouchEvent: ACTION_UP");
-			if ((mState & MENU_DRAGGING) != 0) {
-				final VelocityTracker velocityTracker = mVelocityTracker;
-				velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
-				float xVelocity = Math.abs(velocityTracker.getXVelocity());
-				if (xVelocity > mMinimumVelocity) {
-					// velocity is greater than the minimum velocity
-					if ((mState & MENU_CLOSED) != 0) {
-						// open
-						startScroll(0, 0,
-								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
-								0);
-					} else if ((mState & MENU_OPENED) != 0) {
-						// close
-						startScroll(0, 0, mHost.getLeft(), 0);
-					}
-				} else {
-					final int pointerIndex = event
-							.findPointerIndex(mActivePointerId);
-					final float x = event.getX(pointerIndex);
-					float diff = Math.abs(x - mStartX);
-					if (diff > mMenu.getMeasuredWidth() / 2) {
-						if ((mState & MENU_CLOSED) != 0) {
-							// open
-							startScroll(0, 0,
-									-(mMenu.getMeasuredWidth() - mHost
-											.getLeft()), 0);
-						} else if ((mState & MENU_OPENED) != 0) {
-							// close
-							startScroll(0, 0, mHost.getLeft(), 0);
-						}
-					} else {
-						if ((mState & MENU_CLOSED) != 0) {
-							// close
-							startScroll(0, 0, mHost.getLeft(), 0);
-						} else if ((mState & MENU_OPENED) != 0) {
-							// open
-							startScroll(0, 0,
-									-(mMenu.getMeasuredWidth() - mHost
-											.getLeft()), 0);
-						}
-					}
-				}
-			}
-			mActivePointerId = INVALID_POINTER_ID;
+			//doActionUpWithVelocityAndThreshold(event);
+			doActionUpJustWithGesutureDirection(event);
 			break;
 		}
 		case MotionEvent.ACTION_DOWN:
@@ -423,6 +399,64 @@ public class RootView extends ViewGroup {
 		}
 		}
 		return super.onTouchEvent(event);
+	}
+
+	private void doActionUpWithVelocityAndThreshold(MotionEvent event) {
+		if ((mState & MENU_DRAGGING) != 0) {
+			final VelocityTracker velocityTracker = mVelocityTracker;
+			velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+			float xVelocity = Math.abs(velocityTracker.getXVelocity());
+			if (xVelocity > mMinimumVelocity) {
+				// velocity is greater than the minimum velocity
+				if ((mState & MENU_CLOSED) != 0) {
+					// open
+					startScroll(0, 0,
+							-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0);
+				} else if ((mState & MENU_OPENED) != 0) {
+					// close
+					startScroll(0, 0, mHost.getLeft(), 0);
+				}
+			} else {
+				final int pointerIndex = event
+						.findPointerIndex(mActivePointerId);
+				final float x = event.getX(pointerIndex);
+				float diff = Math.abs(x - mStartX);
+				if (diff > mMenu.getMeasuredWidth() / 2) {
+					if ((mState & MENU_CLOSED) != 0) {
+						// open
+						startScroll(0, 0,
+								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
+								0);
+					} else if ((mState & MENU_OPENED) != 0) {
+						// close
+						startScroll(0, 0, mHost.getLeft(), 0);
+					}
+				} else {
+					if ((mState & MENU_CLOSED) != 0) {
+						// close
+						startScroll(0, 0, mHost.getLeft(), 0);
+					} else if ((mState & MENU_OPENED) != 0) {
+						// open
+						startScroll(0, 0,
+								-(mMenu.getMeasuredWidth() - mHost.getLeft()),
+								0);
+					}
+				}
+			}
+		}
+		mActivePointerId = INVALID_POINTER_ID;
+	}
+
+	private void doActionUpJustWithGesutureDirection(MotionEvent event) {
+		if ((mState & MENU_DRAGGING) == 0)
+			return;
+		if(mGestureToRight){
+			startScroll(0, 0,
+					-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0);
+		}else{
+			startScroll(0, 0, mHost.getLeft(), 0);
+		}
+		mActivePointerId = INVALID_POINTER_ID;
 	}
 
 	private void startScroll(int startX, int startY, int dx, int dy) {
