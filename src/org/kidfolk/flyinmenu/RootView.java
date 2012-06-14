@@ -375,6 +375,7 @@ public class RootView extends ViewGroup {
 			Log.d(TAG, "onTouchEvent: ACTION_UP");
 			// doActionUpWithVelocityAndThreshold(event);
 			doActionUpJustWithGesutureDirection(event);
+			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		}
 		case MotionEvent.ACTION_DOWN:
@@ -458,14 +459,14 @@ public class RootView extends ViewGroup {
 	}
 
 	private void doActionUpJustWithGesutureDirection(MotionEvent event) {
-		if ((mState & MENU_DRAGGING) == 0)
+		if ((mState & MENU_DRAGGING) == 0){
 			return;
+		}
 		if (mGestureToRight) {
 			startScroll(0, 0, -(mMenu.getMeasuredWidth() - mHost.getLeft()), 0);
 		} else {
 			startScroll(0, 0, mHost.getLeft(), 0);
 		}
-		mActivePointerId = INVALID_POINTER_ID;
 	}
 
 	private void startScroll(int startX, int startY, int dx, int dy) {
