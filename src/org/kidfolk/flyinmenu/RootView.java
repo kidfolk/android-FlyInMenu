@@ -203,6 +203,13 @@ public class RootView extends ViewGroup {
 
 	private static final float PARALLAX_SPEED_RATIO = 0.25f;
 
+	public interface OnDrawMenuArrowListener{
+		public void onDrawMenuArrow(Canvas canvas,float opennessRatio);
+	}
+	private OnDrawMenuArrowListener mOnDrawMenuArrowListener;
+	public void setOnDrawMenuArrowListener(OnDrawMenuArrowListener listener){
+		this.mOnDrawMenuArrowListener = listener;
+	}
 	private void drawMenuArrow(Canvas canvas, float opennessRatio) {
 		// Rect outRect = new Rect();
 		// ListView listView = (ListView) mMenu.findViewById(R.id.list);
@@ -213,6 +220,9 @@ public class RootView extends ViewGroup {
 		// offsetDescendantRectToMyCoords(mHost, outRect);
 		// Log.d(TAG, "outRect left:" + outRect.left + ",right:" + outRect.right
 		// + ",top:" + outRect.top + ",bottom:" + outRect.bottom);
+		if(mOnDrawMenuArrowListener!=null){
+			mOnDrawMenuArrowListener.onDrawMenuArrow(canvas, opennessRatio);
+		}
 	}
 
 	private static final int MAXIMUM_MENU_ALPHA_OVERLAY = 170;
