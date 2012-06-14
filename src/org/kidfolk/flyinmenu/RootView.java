@@ -203,24 +203,18 @@ public class RootView extends ViewGroup {
 
 	private static final float PARALLAX_SPEED_RATIO = 0.25f;
 
-	public interface OnDrawMenuArrowListener{
-		public void onDrawMenuArrow(Canvas canvas,float opennessRatio);
+	public interface OnDrawMenuArrowListener {
+		public void onDrawMenuArrow(Canvas canvas, float opennessRatio);
 	}
+
 	private OnDrawMenuArrowListener mOnDrawMenuArrowListener;
-	public void setOnDrawMenuArrowListener(OnDrawMenuArrowListener listener){
+
+	public void setOnDrawMenuArrowListener(OnDrawMenuArrowListener listener) {
 		this.mOnDrawMenuArrowListener = listener;
 	}
+
 	private void drawMenuArrow(Canvas canvas, float opennessRatio) {
-		// Rect outRect = new Rect();
-		// ListView listView = (ListView) mMenu.findViewById(R.id.list);
-		// View view = listView.getChildAt(2);
-		// view.getDrawingRect(outRect);
-		// Log.d(TAG, "outRect left:" + outRect.left + ",right:" + outRect.right
-		// + ",top:" + outRect.top + ",bottom:" + outRect.bottom);
-		// offsetDescendantRectToMyCoords(mHost, outRect);
-		// Log.d(TAG, "outRect left:" + outRect.left + ",right:" + outRect.right
-		// + ",top:" + outRect.top + ",bottom:" + outRect.bottom);
-		if(mOnDrawMenuArrowListener!=null){
+		if (mOnDrawMenuArrowListener != null) {
 			mOnDrawMenuArrowListener.onDrawMenuArrow(canvas, opennessRatio);
 		}
 	}
@@ -373,7 +367,7 @@ public class RootView extends ViewGroup {
 		}
 		case MotionEvent.ACTION_UP: {
 			Log.d(TAG, "onTouchEvent: ACTION_UP");
-			//doActionUpWithVelocityAndThreshold(event);
+			// doActionUpWithVelocityAndThreshold(event);
 			doActionUpJustWithGesutureDirection(event);
 			break;
 		}
@@ -460,10 +454,9 @@ public class RootView extends ViewGroup {
 	private void doActionUpJustWithGesutureDirection(MotionEvent event) {
 		if ((mState & MENU_DRAGGING) == 0)
 			return;
-		if(mGestureToRight){
-			startScroll(0, 0,
-					-(mMenu.getMeasuredWidth() - mHost.getLeft()), 0);
-		}else{
+		if (mGestureToRight) {
+			startScroll(0, 0, -(mMenu.getMeasuredWidth() - mHost.getLeft()), 0);
+		} else {
 			startScroll(0, 0, mHost.getLeft(), 0);
 		}
 		mActivePointerId = INVALID_POINTER_ID;
