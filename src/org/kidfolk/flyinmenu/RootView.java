@@ -308,8 +308,14 @@ public class RootView extends ViewGroup {
 			}
 			mVelocityTracker.addMovement(ev);
 		}
+		boolean result = false;
+		if ((mState & MENU_DRAGGING) != 0) {
+			result = true;
+		} else if (mStartX >= mScreenWidth - mHostRemainWidth) {
+			result = true;
+		}
 
-		return (mState & MENU_DRAGGING) != 0;
+		return result;
 	}
 
 	@Override
