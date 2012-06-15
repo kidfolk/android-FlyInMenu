@@ -160,7 +160,7 @@ public class RootView extends ViewGroup {
 		final View host = mHost;
 		final int hostWidth = host.getMeasuredWidth();
 		final int hostHeight = host.getMeasuredHeight();
-		if ((mState & MENU_OPENED) != 0) {
+		if (mState == MENU_OPENED) {
 			host.layout(menuWidth, 0, menuWidth + hostWidth, hostHeight);
 		} else {
 			host.layout(0, 0, hostWidth, hostHeight);
@@ -316,7 +316,7 @@ public class RootView extends ViewGroup {
 			mVelocityTracker.addMovement(ev);
 		}
 
-		return (mState & MENU_DRAGGING) != 0;
+		return (mState & MENU_DRAGGING) != 0 && (mState & MENU_FLINGING) == 0;
 	}
 
 	@Override
@@ -448,9 +448,6 @@ public class RootView extends ViewGroup {
 	}
 
 	private void doActionUpJustWithGesutureDirection(MotionEvent event) {
-		if ((mState & MENU_DRAGGING) == 0) {
-			return;
-		}
 		if (mGestureToRight) {
 			startScroll(0, 0, -(mMenu.getMeasuredWidth() - mHost.getLeft()), 0);
 		} else {
@@ -532,7 +529,9 @@ public class RootView extends ViewGroup {
 				if ((mState & MENU_DRAGGING) != 0) {
 					mState ^= MENU_DRAGGING;
 				}
-				mState |= MENU_FLINGING;
+				if ((mState & MENU_FLINGING) == 0) {
+					mState |= MENU_FLINGING;
+				}
 				mHost.offsetLeftAndRight(-diff);
 				lastX = x;
 				postInvalidate();
