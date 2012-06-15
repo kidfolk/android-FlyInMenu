@@ -289,6 +289,13 @@ public class RootView extends ViewGroup {
 				// open gesture
 				Log.d(TAG, "open gesture");
 				mState |= MENU_DRAGGING;
+			} else if (mStartX >= mScreenWidth - mHostRemainWidth
+					&& (mStartX - x) > 0
+					&& distance > mViewConfig.getScaledTouchSlop()
+					&& distance > mViewConfig.getScaledPagingTouchSlop()
+					&& mState == MENU_OPENED) {
+				Log.d(TAG, "close gesture");
+				mState |= MENU_DRAGGING;
 			}
 			mLastX = x;
 			mLastY = y;
@@ -308,14 +315,8 @@ public class RootView extends ViewGroup {
 			}
 			mVelocityTracker.addMovement(ev);
 		}
-		boolean result = false;
-		if ((mState & MENU_DRAGGING) != 0) {
-			result = true;
-		} else if (mStartX >= mScreenWidth - mHostRemainWidth) {
-			result = true;
-		}
 
-		return result;
+		return (mState & MENU_DRAGGING) != 0;
 	}
 
 	@Override
@@ -343,7 +344,7 @@ public class RootView extends ViewGroup {
 					distance = mMenu.getMeasuredWidth() - left;
 				}
 
-				// 纪录最终手势方向
+				// 记录最终手势方向
 				if (distance > 0) {
 					// user want open
 					mGestureToRight = true;
@@ -354,18 +355,6 @@ public class RootView extends ViewGroup {
 
 				mHost.offsetLeftAndRight((int) distance);
 				postInvalidate();
-			} else {
-				double diff = Math.hypot(x - mStartX, y - mStartY);
-				if (/*
-					 * mStartX >= mScreenWidth - mHostRemainWidth &&
-					 */(mStartX - x) > 0
-						&& diff > mViewConfig.getScaledTouchSlop()
-						&& diff > mViewConfig.getScaledPagingTouchSlop()
-						&& mState == MENU_OPENED) {
-					// close gesture
-					Log.d(TAG, "close gesture");
-					mState |= MENU_DRAGGING;
-				}
 			}
 			mLastX = x;
 			mLastY = y;
@@ -459,7 +448,7 @@ public class RootView extends ViewGroup {
 	}
 
 	private void doActionUpJustWithGesutureDirection(MotionEvent event) {
-		if ((mState & MENU_DRAGGING) == 0){
+		if ((mState & MENU_DRAGGING) == 0) {
 			return;
 		}
 		if (mGestureToRight) {
