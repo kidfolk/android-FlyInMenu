@@ -33,7 +33,7 @@ public class RootView extends ViewGroup {
 
 	private OverScroller mScroller;
 	private VelocityTracker mVelocityTracker;
-	private int mState;
+	private int mState = MENU_CLOSED;
 	private static final int MENU_CLOSED = 1;
 	private static final int MENU_OPENED = 2;
 	private static final int MENU_DRAGGING = 4;
@@ -85,6 +85,10 @@ public class RootView extends ViewGroup {
 		}
 		a.recycle();
 
+		init(context);
+	}
+
+	private void init(Context context) {
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, BEZEL_SWIPE_WIDTH, getResources()
 						.getDisplayMetrics());
@@ -107,19 +111,15 @@ public class RootView extends ViewGroup {
 		this(context, attrs, 0);
 	}
 
+	public RootView(Context context) {
+		super(context);
+		init(context);
+	}
+
 	@Override
 	protected void onFinishInflate() {
-		Log.d(TAG, "onFinishInflate");
-		mMenu = findViewById(mMenuId);
-		if (mMenu == null) {
-			throw new IllegalArgumentException(
-					"The menu attribute is must refer to an existing child.");
-		}
-		mHost = findViewById(mHostId);
-		if (mHost == null) {
-			throw new IllegalArgumentException(
-					"The host attribute is must refer to an existing child.");
-		}
+		setMenu(mMenuId);
+		setHost(mHostId);
 	}
 
 	@Override
@@ -481,11 +481,15 @@ public class RootView extends ViewGroup {
 	}
 
 	public void close() {
+		if (mState == MENU_CLOSED)
+			return;
 		mHost.offsetLeftAndRight(-mMenu.getMeasuredWidth());
 		mState = MENU_CLOSED;
 	}
 
 	public void open() {
+		if (mState == MENU_OPENED)
+			return;
 		mHost.offsetLeftAndRight(mMenu.getMeasuredWidth());
 		mState = MENU_OPENED;
 	}
@@ -580,6 +584,42 @@ public class RootView extends ViewGroup {
 			super(width, height);
 		}
 
+	}
+
+	public void setMenu(int menuId) {
+		if (menuId == 0) {
+			throw new IllegalArgumentException(
+					"The menu attribute is required and must refer to a valid child.");
+		}
+		mMenuId = menuId;
+		mMenu = findViewById(menuId);
+		if (mMenu == null) {
+			throw new IllegalArgumentException(
+					"The menu attribute is must refer to an existing child.");
+		}
+	}
+
+	public void setMenu(View menu) {
+		mMenuId = menu.getId();
+		mMenu = menu;
+	}
+
+	public void setHost(int hostId) {
+		if (hostId == 0) {
+			throw new IllegalArgumentException(
+					"The host attribute is required and must refer to a valid child.");
+		}
+		mHostId = hostId;
+		mHost = findViewById(hostId);
+		if (mHost == null) {
+			throw new IllegalArgumentException(
+					"The host attribute is must refer to an existing child.");
+		}
+	}
+
+	public void setHost(View host) {
+		mHostId = host.getId();
+		mHost = host;
 	}
 
 }
