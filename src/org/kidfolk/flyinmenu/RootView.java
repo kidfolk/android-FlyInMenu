@@ -265,6 +265,9 @@ public class RootView extends ViewGroup {
 		 * If we return true.onTouchEvent will be called and we do the actual
 		 * scrolling there
 		 */
+		if(!isEnabled()){
+			return false;
+		}
 		final int action = ev.getAction() & MotionEvent.ACTION_MASK;
 
 		switch (action) {
