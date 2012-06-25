@@ -124,7 +124,7 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		Log.d(TAG, "onMeasure");
+		//Log.d(TAG, "onMeasure");
 		int maxHeight = 0;
 		int maxWidth = 0;
 
@@ -150,7 +150,7 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		Log.d(TAG, "onLayout");
+		//Log.d(TAG, "onLayout");
 
 		final View menu = mMenu;
 		final int menuWidth = menu.getMeasuredWidth();
