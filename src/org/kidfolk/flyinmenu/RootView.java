@@ -282,13 +282,16 @@ public class RootView extends ViewGroup {
 			final float x = ev.getX(pointerIndex);
 			final float y = ev.getY(pointerIndex);
 
-			double distance = Math.hypot(x - mStartX, y - mStartY);
+			float xDiff = Math.abs(x-mStartX);
+			float yDiff = Math.abs(y-mStartY);
+			double distance = Math.hypot(xDiff, yDiff);
+			
 			if (/*
 				 * mStartX <= mBezelSwipeWidth &&
 				 */distance > mViewConfig.getScaledTouchSlop()
 					&& (x - mStartX) > 0
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& mState == MENU_CLOSED) {
+					&& mState == MENU_CLOSED&&xDiff>yDiff) {
 				// open gesture
 				Log.d(TAG, "open gesture");
 				mState |= MENU_DRAGGING;
@@ -296,7 +299,7 @@ public class RootView extends ViewGroup {
 					&& (mStartX - x) > 0
 					&& distance > mViewConfig.getScaledTouchSlop()
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& mState == MENU_OPENED) {
+					&& mState == MENU_OPENED&&xDiff>yDiff) {
 				Log.d(TAG, "close gesture");
 				mState |= MENU_DRAGGING;
 			}
@@ -309,6 +312,7 @@ public class RootView extends ViewGroup {
 
 		case MotionEvent.ACTION_POINTER_UP:
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
+			onSecondraryPointerUp(ev);
 			break;
 		}
 
@@ -384,24 +388,28 @@ public class RootView extends ViewGroup {
 			break;
 		}
 		case MotionEvent.ACTION_POINTER_UP: {
-			final int pointerIndex = event.getActionIndex();
-			final int pointerId = event.getPointerId(pointerIndex);
-			if (pointerId == mActivePointerId) {
-				// this is our active pointer going up.choose a new
-				// active pointer an adjust accordingly.
-				Log.d(TAG, "active pointer going up");
-				final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-				mLastX = event.getX(newPointerIndex);
-				mLastY = event.getY(newPointerIndex);
-				mActivePointerId = event.getPointerId(newPointerIndex);
-				if (mVelocityTracker != null) {
-					mVelocityTracker.clear();
-				}
-			}
+			onSecondraryPointerUp(event);
 			break;
 		}
 		}
 		return super.onTouchEvent(event);
+	}
+
+	private void onSecondraryPointerUp(MotionEvent event) {
+		final int pointerIndex = event.getActionIndex();
+		final int pointerId = event.getPointerId(pointerIndex);
+		if (pointerId == mActivePointerId) {
+			// this is our active pointer going up.choose a new
+			// active pointer an adjust accordingly.
+			Log.d(TAG, "active pointer going up");
+			final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+			mLastX = event.getX(newPointerIndex);
+			mLastY = event.getY(newPointerIndex);
+			mActivePointerId = event.getPointerId(newPointerIndex);
+			if (mVelocityTracker != null) {
+				mVelocityTracker.clear();
+			}
+		}
 	}
 
 	private void doActionUpWithVelocityAndThreshold(MotionEvent event) {
