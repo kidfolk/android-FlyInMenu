@@ -24,12 +24,12 @@ public class RootView extends ViewGroup {
 
 	private View mMenu;// 菜单
 	private View mHost;// 内容
-	private int mMenuId;
-	private int mHostId;
-	private int mHostRemainWidth;
+	private int mMenuId;// 菜单id
+	private int mHostId;// 内容id
+	private int mHostRemainWidth;// 菜单打开后host还保留的宽度
 	private int mBezelSwipeWidth;
-	private int mScreenWidth;
-	private int mShadowWidth;
+	private int mScreenWidth;// 屏幕宽度
+	private int mShadowWidth;// 屏幕高度
 
 	private OverScroller mScroller;
 	private VelocityTracker mVelocityTracker;
@@ -38,10 +38,31 @@ public class RootView extends ViewGroup {
 	private static final int MENU_OPENED = 2;
 	private static final int MENU_DRAGGING = 4;
 	private static final int MENU_FLINGING = 8;
-	private boolean mGestureToRight = false;
+	private boolean mGestureToRight = false;// 记录是否是向右的打开菜单手势
 
 	private Drawable mShadowDrawable;
 	private Paint mMenuOverlayPaint;
+
+	private float mStartX;
+	private float mStartY;
+	private float mLastX;
+	private float mLastY;
+	private ViewConfiguration mViewConfig;
+	/**
+	 * ID of the active pointer. This is used to retain consistency during
+	 * drags/flings if multiple pointers are used.
+	 */
+	private int mActivePointerId = INVALID_POINTER_ID;
+	private float mMaximumVelocity;
+	private float mMinimumVelocity;
+	/**
+	 * Sentinel value for no current active pointer. Used by
+	 * {@link #mActivePointerId}.
+	 */
+	private static final int INVALID_POINTER_ID = -1;
+
+	private static final float PARALLAX_SPEED_RATIO = 0.25f;
+	private static final int MAXIMUM_MENU_ALPHA_OVERLAY = 170;
 
 	private static final int ANIMATION_FRAME_DURATION = 1000 / 60;
 	private static final int ANIMATION_DURATION = 500;
@@ -88,6 +109,11 @@ public class RootView extends ViewGroup {
 		init(context);
 	}
 
+	/**
+	 * 初始化参数信息
+	 * 
+	 * @param context
+	 */
 	private void init(Context context) {
 		mBezelSwipeWidth = (int) TypedValue.applyDimension(
 				TypedValue.COMPLEX_UNIT_DIP, BEZEL_SWIPE_WIDTH, getResources()
@@ -124,7 +150,7 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		//Log.d(TAG, "onMeasure");
+		// Log.d(TAG, "onMeasure");
 		int maxHeight = 0;
 		int maxWidth = 0;
 
@@ -150,7 +176,7 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		//Log.d(TAG, "onLayout");
+		// Log.d(TAG, "onLayout");
 
 		final View menu = mMenu;
 		final int menuWidth = menu.getMeasuredWidth();
@@ -201,8 +227,6 @@ public class RootView extends ViewGroup {
 		}
 	}
 
-	private static final float PARALLAX_SPEED_RATIO = 0.25f;
-
 	public interface OnDrawMenuArrowListener {
 		public void onDrawMenuArrow(Canvas canvas, float opennessRatio);
 	}
@@ -219,8 +243,6 @@ public class RootView extends ViewGroup {
 		}
 	}
 
-	private static final int MAXIMUM_MENU_ALPHA_OVERLAY = 170;
-
 	private void drawMenuOverlay(Canvas canvas, float opennessRatio) {
 		final Paint menuOverlayPaint = mMenuOverlayPaint;
 		final int alpha = (int) (MAXIMUM_MENU_ALPHA_OVERLAY * opennessRatio);
@@ -230,30 +252,6 @@ public class RootView extends ViewGroup {
 					menuOverlayPaint);
 		}
 	}
-
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		Log.d(TAG, "keyCode:" + keyCode);
-		return super.onKeyDown(keyCode, event);
-	}
-
-	private float mStartX;
-	private float mStartY;
-	private float mLastX;
-	private float mLastY;
-	private ViewConfiguration mViewConfig;
-	/**
-	 * ID of the active pointer. This is used to retain consistency during
-	 * drags/flings if multiple pointers are used.
-	 */
-	private int mActivePointerId = INVALID_POINTER_ID;
-	private float mMaximumVelocity;
-	private float mMinimumVelocity;
-	/**
-	 * Sentinel value for no current active pointer. Used by
-	 * {@link #mActivePointerId}.
-	 */
-	private static final int INVALID_POINTER_ID = -1;
 
 	/**
 	 * when can a gesture be considered as a swipe
@@ -265,7 +263,7 @@ public class RootView extends ViewGroup {
 		 * If we return true.onTouchEvent will be called and we do the actual
 		 * scrolling there
 		 */
-		if(!isEnabled()){
+		if (!isEnabled()) {
 			return false;
 		}
 		final int action = ev.getAction() & MotionEvent.ACTION_MASK;
@@ -282,25 +280,25 @@ public class RootView extends ViewGroup {
 			final float x = ev.getX(pointerIndex);
 			final float y = ev.getY(pointerIndex);
 
-			float xDiff = Math.abs(x-mStartX);
-			float yDiff = Math.abs(y-mStartY);
+			float xDiff = Math.abs(x - mStartX);
+			float yDiff = Math.abs(y - mStartY);
 			double distance = Math.hypot(xDiff, yDiff);
-			
+
 			if (/*
 				 * mStartX <= mBezelSwipeWidth &&
 				 */distance > mViewConfig.getScaledTouchSlop()
 					&& (x - mStartX) > 0
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& mState == MENU_CLOSED&&xDiff>yDiff) {
+					&& mState == MENU_CLOSED 
+					&& xDiff > yDiff) {
 				// open gesture
-				Log.d(TAG, "open gesture");
 				mState |= MENU_DRAGGING;
 			} else if (mStartX >= mScreenWidth - mHostRemainWidth
 					&& (mStartX - x) > 0
 					&& distance > mViewConfig.getScaledTouchSlop()
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& mState == MENU_OPENED&&xDiff>yDiff) {
-				Log.d(TAG, "close gesture");
+					&& mState == MENU_OPENED 
+					&& xDiff > yDiff) {
 				mState |= MENU_DRAGGING;
 			}
 			mLastX = x;
@@ -312,7 +310,7 @@ public class RootView extends ViewGroup {
 
 		case MotionEvent.ACTION_POINTER_UP:
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
-			onSecondraryPointerUp(ev);
+			onSecondaryPointerUp(ev);
 			break;
 		}
 
@@ -388,14 +386,14 @@ public class RootView extends ViewGroup {
 			break;
 		}
 		case MotionEvent.ACTION_POINTER_UP: {
-			onSecondraryPointerUp(event);
+			onSecondaryPointerUp(event);
 			break;
 		}
 		}
 		return super.onTouchEvent(event);
 	}
 
-	private void onSecondraryPointerUp(MotionEvent event) {
+	private void onSecondaryPointerUp(MotionEvent event) {
 		final int pointerIndex = event.getActionIndex();
 		final int pointerId = event.getPointerId(pointerIndex);
 		if (pointerId == mActivePointerId) {
