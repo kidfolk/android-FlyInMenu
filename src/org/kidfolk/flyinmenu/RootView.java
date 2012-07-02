@@ -11,7 +11,6 @@ import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -43,8 +42,6 @@ public class RootView extends ViewGroup {
 	private Drawable mShadowDrawable;
 	private Paint mMenuOverlayPaint;
 
-	private float mStartX;
-	private float mStartY;
 	private float mLastX;
 	private float mLastY;
 	private ViewConfiguration mViewConfig;
@@ -150,7 +147,6 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		// Log.d(TAG, "onMeasure");
 		int maxHeight = 0;
 		int maxWidth = 0;
 
@@ -176,8 +172,6 @@ public class RootView extends ViewGroup {
 
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		// Log.d(TAG, "onLayout");
-
 		final View menu = mMenu;
 		final int menuWidth = menu.getMeasuredWidth();
 		final int menuHeight = menu.getMeasuredHeight();
@@ -253,6 +247,20 @@ public class RootView extends ViewGroup {
 		}
 	}
 
+	public interface OnMenuOpenListener {
+		public boolean ignoreOpen(MotionEvent event);
+	}
+
+	public interface OnMenuCloseListener {
+
+	}
+
+	public OnMenuOpenListener mMenuOpenListener;
+
+	public void setOnMenuOpenListener(OnMenuOpenListener listener) {
+		this.mMenuOpenListener = listener;
+	}
+
 	/**
 	 * when can a gesture be considered as a swipe
 	 */
@@ -271,38 +279,45 @@ public class RootView extends ViewGroup {
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
-			mLastX = mStartX = ev.getX();
-			mLastY = mStartY = ev.getY();
+			mLastX = ev.getX();
+			mLastY = ev.getY();
 			mActivePointerId = ev.getPointerId(0);
 			break;
 		case MotionEvent.ACTION_MOVE:
+			Log.d(TAG, "onInterceptTouchEvent: ACTION_MOVE");
 			final int pointerIndex = ev.findPointerIndex(mActivePointerId);
 			final float x = ev.getX(pointerIndex);
 			final float y = ev.getY(pointerIndex);
 
-			float xDiff = Math.abs(x - mStartX);
-			float yDiff = Math.abs(y - mStartY);
+			float xDiff = Math.abs(x - mLastX);
+			float yDiff = Math.abs(y - mLastY);
 			double distance = Math.hypot(xDiff, yDiff);
 
 			if (/*
 				 * mStartX <= mBezelSwipeWidth &&
 				 */distance > mViewConfig.getScaledTouchSlop()
-					&& (x - mStartX) > 0
+					&& (x - mLastX) > 0
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& mState == MENU_CLOSED 
-					&& xDiff > yDiff) {
+					&& mState == MENU_CLOSED && xDiff > yDiff) {
 				// open gesture
-				mState |= MENU_DRAGGING;
-			} else if (mStartX >= mScreenWidth - mHostRemainWidth
-					&& (mStartX - x) > 0
+				Log.d(TAG, "open gesture");
+				if(this.mMenuOpenListener!=null){
+					if(this.mMenuOpenListener.ignoreOpen(ev)){
+						
+					}else{
+						mState |= MENU_DRAGGING;
+					}
+				}else{
+					mState |= MENU_DRAGGING;
+				}
+			} else if (mLastX >= mScreenWidth - mHostRemainWidth
+					&& (mLastX - x) > 0
 					&& distance > mViewConfig.getScaledTouchSlop()
 					&& distance > mViewConfig.getScaledPagingTouchSlop()
-					&& mState == MENU_OPENED 
-					&& xDiff > yDiff) {
+					&& mState == MENU_OPENED && xDiff > yDiff) {
+				Log.d(TAG, "close gesture");
 				mState |= MENU_DRAGGING;
 			}
-			mLastX = x;
-			mLastY = y;
 			break;
 		case MotionEvent.ACTION_CANCEL:
 			Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
@@ -374,8 +389,8 @@ public class RootView extends ViewGroup {
 		}
 		case MotionEvent.ACTION_DOWN:
 			Log.d(TAG, "onTouchEvent: ACTION_DOWN");
-			mLastX = mStartX = event.getX();
-			mLastY = mStartY = event.getY();
+			mLastX = event.getX();
+			mLastY = event.getY();
 			mActivePointerId = event.getPointerId(0);
 			return true;
 		case MotionEvent.ACTION_CANCEL:
@@ -383,6 +398,7 @@ public class RootView extends ViewGroup {
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		case MotionEvent.ACTION_POINTER_DOWN: {
+			Log.d(TAG, "onTouchEvent: ACTION_POINTER_DOWN");
 			break;
 		}
 		case MotionEvent.ACTION_POINTER_UP: {
@@ -410,6 +426,7 @@ public class RootView extends ViewGroup {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void doActionUpWithVelocityAndThreshold(MotionEvent event) {
 		if ((mState & MENU_DRAGGING) != 0) {
 			final VelocityTracker velocityTracker = mVelocityTracker;
@@ -429,7 +446,7 @@ public class RootView extends ViewGroup {
 				final int pointerIndex = event
 						.findPointerIndex(mActivePointerId);
 				final float x = event.getX(pointerIndex);
-				float diff = Math.abs(x - mStartX);
+				float diff = Math.abs(x - mLastX);
 				if (diff > mMenu.getMeasuredWidth() / 2) {
 					if ((mState & MENU_CLOSED) != 0) {
 						// open
@@ -545,6 +562,7 @@ public class RootView extends ViewGroup {
 				if ((mState & MENU_FLINGING) == 0) {
 					mState |= MENU_FLINGING;
 				}
+				Log.d(TAG, "scroll diff: "+diff);
 				mHost.offsetLeftAndRight(-diff);
 				lastX = x;
 				postInvalidate();
