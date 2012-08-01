@@ -416,7 +416,6 @@ public class RootView extends ViewGroup {
 		}
 		case MotionEvent.ACTION_UP: {
 			Log.d(TAG, "onTouchEvent: ACTION_UP");
-			// doActionUpWithVelocityAndThreshold(event);
 			doActionUpJustWithGesutureDirection(event);
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
