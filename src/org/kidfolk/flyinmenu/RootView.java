@@ -9,7 +9,6 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -278,13 +277,13 @@ public class RootView extends ViewGroup {
 
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
-			//Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
+			// Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
 			mLastX = ev.getX();
 			mLastY = ev.getY();
 			mActivePointerId = ev.getPointerId(0);
 			break;
 		case MotionEvent.ACTION_MOVE:
-			//Log.d(TAG, "onInterceptTouchEvent: ACTION_MOVE");
+			// Log.d(TAG, "onInterceptTouchEvent: ACTION_MOVE");
 			final int pointerIndex = ev.findPointerIndex(mActivePointerId);
 			final float x = ev.getX(pointerIndex);
 			final float y = ev.getY(pointerIndex);
@@ -418,7 +417,7 @@ public class RootView extends ViewGroup {
 		if (pointerId == mActivePointerId) {
 			// this is our active pointer going up.choose a new
 			// active pointer an adjust accordingly.
-			//Log.d(TAG, "active pointer going up");
+			// Log.d(TAG, "active pointer going up");
 			final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
 			mLastX = event.getX(newPointerIndex);
 			mLastY = event.getY(newPointerIndex);
