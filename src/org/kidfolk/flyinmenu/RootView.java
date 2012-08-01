@@ -18,6 +18,12 @@ import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.widget.OverScroller;
 
+/**
+ * 左侧菜单视图
+ * 
+ * @author 徐武进
+ * 
+ */
 public class RootView extends ViewGroup {
 
 	private View mMenu;// 菜单
@@ -558,20 +564,23 @@ public class RootView extends ViewGroup {
 			int x = mScroller.getCurrX();
 			int diff = x - lastX;
 			if (diff != 0) {
-				if ((mState & MENU_DRAGGING) != 0) {
+				if (isDragging()) {
+					// 如果当前视图正在拖动，则当用户松手之后重置拖动状态
 					mState ^= MENU_DRAGGING;
 				}
-				if ((mState & MENU_FLINGING) == 0) {
+				if (!isFlinging()) {
 					mState |= MENU_FLINGING;
 				}
-				// Log.d(TAG, "scroll diff: "+diff);
-				mHost.offsetLeftAndRight(-diff);
-				lastX = x;
-				postInvalidate();
+				if (isFlinging()) {
+					mHost.offsetLeftAndRight(-diff);
+					lastX = x;
+					postInvalidate();
+				}
 			}
 			if (more) {
 				mHandler.postDelayed(this, ANIMATION_FRAME_DURATION);
 			} else {
+				mHandler.removeCallbacks(this);
 				if (open) {
 					mState = MENU_OPENED;
 				} else {
@@ -615,6 +624,12 @@ public class RootView extends ViewGroup {
 
 	}
 
+	/**
+	 * 设置菜单视图
+	 * 
+	 * @param menuId
+	 *            菜单视图的id
+	 */
 	public void setMenu(int menuId) {
 		if (menuId == 0) {
 			throw new IllegalArgumentException(
@@ -628,11 +643,12 @@ public class RootView extends ViewGroup {
 		}
 	}
 
-	public void setMenu(View menu) {
-		mMenuId = menu.getId();
-		mMenu = menu;
-	}
-
+	/**
+	 * 设置内容视图
+	 * 
+	 * @param hostId
+	 *            内容视图的id
+	 */
 	public void setHost(int hostId) {
 		if (hostId == 0) {
 			throw new IllegalArgumentException(
@@ -644,6 +660,11 @@ public class RootView extends ViewGroup {
 			throw new IllegalArgumentException(
 					"The host attribute is must refer to an existing child.");
 		}
+	}
+
+	public void setMenu(View menu) {
+		mMenuId = menu.getId();
+		mMenu = menu;
 	}
 
 	public void setHost(View host) {
