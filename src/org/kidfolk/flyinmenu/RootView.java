@@ -300,7 +300,7 @@ public class RootView extends ViewGroup {
 
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
-			Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
+			//Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
 			mLastX = ev.getX();
 			mLastY = ev.getY();
 			mActivePointerId = ev.getPointerId(0);
@@ -347,11 +347,11 @@ public class RootView extends ViewGroup {
 			}
 			break;
 		case MotionEvent.ACTION_CANCEL:
-			Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
+			//Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
 			break;
 
 		case MotionEvent.ACTION_POINTER_UP:
-			Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
+			//Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
 			onSecondaryPointerUp(ev);
 			break;
 		}
@@ -415,27 +415,27 @@ public class RootView extends ViewGroup {
 			break;
 		}
 		case MotionEvent.ACTION_UP: {
-			Log.d(TAG, "onTouchEvent: ACTION_UP");
+			//Log.d(TAG, "onTouchEvent: ACTION_UP");
 			doActionUpJustWithGesutureDirection(event);
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		}
 		case MotionEvent.ACTION_DOWN:
-			Log.d(TAG, "onTouchEvent: ACTION_DOWN");
+			//Log.d(TAG, "onTouchEvent: ACTION_DOWN");
 			mLastX = event.getX();
 			mLastY = event.getY();
 			mActivePointerId = event.getPointerId(0);
 			return true;
 		case MotionEvent.ACTION_CANCEL:
-			Log.d(TAG, "onTouchEvent: ACTION_CANCEL");
+			//Log.d(TAG, "onTouchEvent: ACTION_CANCEL");
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		case MotionEvent.ACTION_POINTER_DOWN: {
-			Log.d(TAG, "onTouchEvent: ACTION_POINTER_DOWN");
+			//Log.d(TAG, "onTouchEvent: ACTION_POINTER_DOWN");
 			break;
 		}
 		case MotionEvent.ACTION_POINTER_UP: {
-			Log.d(TAG, "onTouchEvent: ACTION_POINTER_UP");
+			//Log.d(TAG, "onTouchEvent: ACTION_POINTER_UP");
 			onSecondaryPointerUp(event);
 			break;
 		}
