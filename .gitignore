@@ -4,4 +4,4 @@
 bin/
 gen/
 proguard-project.txt
-project.properties
+local.properties
