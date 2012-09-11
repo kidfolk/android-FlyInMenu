@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<org.kidfolk.flyinmenu.RootView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res/org.kidfolk.flyinmenusample"
+    android:id="@+id/root"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    app:host="@+id/host"
+    app:menu="@+id/menu"
+    app:host_remain_width="53dp" >
+
+    <include
+        android:id="@+id/menu"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        layout="@layout/menu_item" />
+
+    <FrameLayout
+        android:id="@+id/host"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</org.kidfolk.flyinmenu.RootView>

@@ -1,3 +1,4 @@
+.DS_Store
 .classpath
 .project
 .settings/
@@ -5,3 +6,6 @@ bin/
 gen/
 proguard-project.txt
 local.properties
+
+#jar
+android-support-v4.jar
