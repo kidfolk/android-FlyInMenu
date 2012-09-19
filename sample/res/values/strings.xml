@@ -3,5 +3,6 @@
 
     <string name="hello">Hello World, FlyinMenuSampleActivity!</string>
     <string name="app_name">FlyinMenuSample</string>
+    <string name="screen_a">FragmentScreenA</string>
 
 </resources>

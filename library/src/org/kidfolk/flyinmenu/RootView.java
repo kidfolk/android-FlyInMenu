@@ -300,7 +300,7 @@ public class RootView extends ViewGroup {
 
 		switch (action) {
 		case MotionEvent.ACTION_DOWN:
-			//Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
+			// Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN");
 			mLastX = ev.getX();
 			mLastY = ev.getY();
 			mActivePointerId = ev.getPointerId(0);
@@ -347,11 +347,11 @@ public class RootView extends ViewGroup {
 			}
 			break;
 		case MotionEvent.ACTION_CANCEL:
-			//Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
+			// Log.d(TAG, "onInterceptTouchEvent: ACTION_CANCEL");
 			break;
 
 		case MotionEvent.ACTION_POINTER_UP:
-			//Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
+			// Log.d(TAG, "onInterceptTouchEvent: ACTION_POINTER_UP");
 			onSecondaryPointerUp(ev);
 			break;
 		}
@@ -415,27 +415,27 @@ public class RootView extends ViewGroup {
 			break;
 		}
 		case MotionEvent.ACTION_UP: {
-			//Log.d(TAG, "onTouchEvent: ACTION_UP");
+			// Log.d(TAG, "onTouchEvent: ACTION_UP");
 			doActionUpJustWithGesutureDirection(event);
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		}
 		case MotionEvent.ACTION_DOWN:
-			//Log.d(TAG, "onTouchEvent: ACTION_DOWN");
+			// Log.d(TAG, "onTouchEvent: ACTION_DOWN");
 			mLastX = event.getX();
 			mLastY = event.getY();
 			mActivePointerId = event.getPointerId(0);
 			return true;
 		case MotionEvent.ACTION_CANCEL:
-			//Log.d(TAG, "onTouchEvent: ACTION_CANCEL");
+			// Log.d(TAG, "onTouchEvent: ACTION_CANCEL");
 			mActivePointerId = INVALID_POINTER_ID;
 			break;
 		case MotionEvent.ACTION_POINTER_DOWN: {
-			//Log.d(TAG, "onTouchEvent: ACTION_POINTER_DOWN");
+			// Log.d(TAG, "onTouchEvent: ACTION_POINTER_DOWN");
 			break;
 		}
 		case MotionEvent.ACTION_POINTER_UP: {
-			//Log.d(TAG, "onTouchEvent: ACTION_POINTER_UP");
+			// Log.d(TAG, "onTouchEvent: ACTION_POINTER_UP");
 			onSecondaryPointerUp(event);
 			break;
 		}
@@ -523,13 +523,27 @@ public class RootView extends ViewGroup {
 	public void animateClose() {
 		if ((mState & MENU_CLOSED) != 0 || (mState & MENU_FLINGING) != 0)
 			return;
-		startScroll(0, 0, mMenuWidth, 0);
+		this.post(new Runnable() {
+
+			@Override
+			public void run() {
+				startScroll(0, 0, mMenuWidth, 0);
+			}
+		});
+
 	}
 
 	public void animateOpen() {
 		if ((mState & MENU_OPENED) != 0 || (mState & MENU_FLINGING) != 0)
 			return;
-		startScroll(0, 0, -mMenuWidth, 0);
+		this.post(new Runnable() {
+
+			@Override
+			public void run() {
+				startScroll(0, 0, -mMenuWidth, 0);
+			}
+		});
+
 	}
 
 	public void animateToggle() {
@@ -587,23 +601,24 @@ public class RootView extends ViewGroup {
 		@Override
 		public void run() {
 			boolean more = mScroller.computeScrollOffset();
-			int x = mScroller.getCurrX();
-			int diff = x - lastX;
-			if (diff != 0) {
-				if (isDragging()) {
-					// 如果当前视图正在拖动，则当用户松手之后重置拖动状态
-					mState ^= MENU_DRAGGING;
-				}
-				if (!isFlinging()) {
-					mState |= MENU_FLINGING;
-				}
-				if (isFlinging()) {
-					mHost.offsetLeftAndRight(-diff);
-					lastX = x;
-					postInvalidate();
-				}
-			}
 			if (more) {
+				int x = mScroller.getCurrX();
+				int diff = x - lastX;
+				Log.d(TAG, "diff: " + diff + ",lastX: " + lastX);
+				if (diff != 0) {
+					if (isDragging()) {
+						// 如果当前视图正在拖动，则当用户松手之后重置拖动状态
+						mState ^= MENU_DRAGGING;
+					}
+					if (!isFlinging()) {
+						mState |= MENU_FLINGING;
+					}
+					if (isFlinging()) {
+						mHost.offsetLeftAndRight(-diff);
+						lastX = x;
+						postInvalidate();
+					}
+				}
 				mHandler.postDelayed(this, ANIMATION_FRAME_DURATION);
 			} else {
 				mHandler.removeCallbacks(this);

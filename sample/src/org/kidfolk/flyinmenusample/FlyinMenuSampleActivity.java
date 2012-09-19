@@ -8,11 +8,14 @@ import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class FlyinMenuSampleActivity extends FragmentActivity {
+public class FlyinMenuSampleActivity extends FragmentActivity implements
+		OnItemClickListener {
 	private RootView mRootView;
 	private static final String TAG = "FlyInMenuActivity";
 
@@ -28,11 +31,12 @@ public class FlyinMenuSampleActivity extends FragmentActivity {
 		ListView listView = (ListView) findViewById(R.id.list);
 		listView.setAdapter(new NavigationItemAdapter(this
 				.getApplicationContext()));
+		listView.setOnItemClickListener(this);
 
 		mRootView = (RootView) findViewById(R.id.root);
 	}
 
-	RootView getRootView() {
+	public RootView getRootView() {
 		return mRootView;
 	}
 
@@ -128,4 +132,13 @@ public class FlyinMenuSampleActivity extends FragmentActivity {
 		}
 
 	}
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+		getSupportFragmentManager().beginTransaction()
+				.replace(R.id.host, ScreenAFragment.newInstance(position))
+				.commit();
+		mRootView.animateToggle();
+	}
+
 }
