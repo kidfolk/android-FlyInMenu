@@ -605,6 +605,17 @@ public class RootView extends ViewGroup {
 				int x = mScroller.getCurrX();
 				int diff = x - lastX;
 				Log.d(TAG, "diff: " + diff + ",lastX: " + lastX);
+
+                if (mHost.getLeft() > mMenuWidth || mHost.getLeft() < 0){
+                    mHandler.removeCallbacks(this);
+                    if (open) {
+                        mState = MENU_OPENED;
+                    } else {
+                        mState = MENU_CLOSED;
+                    }
+                    return;
+                }
+
 				if (diff != 0) {
 					if (isDragging()) {
 						// 如果当前视图正在拖动，则当用户松手之后重置拖动状态
