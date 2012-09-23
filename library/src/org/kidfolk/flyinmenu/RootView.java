@@ -9,7 +9,6 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -293,7 +292,7 @@ public class RootView extends ViewGroup {
 			return false;
 		}
 		if (isFlinging()) {
-			return false;
+			return true;
 		}
 
 		final int action = ev.getAction() & MotionEvent.ACTION_MASK;
@@ -604,7 +603,26 @@ public class RootView extends ViewGroup {
 			if (more) {
 				int x = mScroller.getCurrX();
 				int diff = x - lastX;
-				Log.d(TAG, "diff: " + diff + ",lastX: " + lastX);
+				if (mHost.getLeft() > mMenuWidth) {
+					mHandler.removeCallbacks(this);
+					if (open) {
+						mState = MENU_OPENED;
+					} else {
+						mState = MENU_CLOSED;
+					}
+					mHost.setLeft(mMenuWidth);
+					return;
+				}
+				if (mHost.getLeft() < 0) {
+					mHandler.removeCallbacks(this);
+					if (open) {
+						mState = MENU_OPENED;
+					} else {
+						mState = MENU_CLOSED;
+					}
+					mHost.setLeft(0);
+					return;
+				}
 				if (diff != 0) {
 					if (isDragging()) {
 						// 如果当前视图正在拖动，则当用户松手之后重置拖动状态
