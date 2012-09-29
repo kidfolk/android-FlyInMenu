@@ -85,6 +85,15 @@ public class RootView extends ViewGroup {
 
 	};
 	private static final String TAG = "RootView";
+	private OnAnimationComplete mAnimationComplete;
+
+	public void setOnAnimationComplete(OnAnimationComplete animationComplete) {
+		this.mAnimationComplete = animationComplete;
+	}
+
+	public interface OnAnimationComplete {
+		public void onAnimationComplete();
+	}
 
 	public RootView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -644,6 +653,9 @@ public class RootView extends ViewGroup {
 					mState = MENU_OPENED;
 				} else {
 					mState = MENU_CLOSED;
+				}
+				if (mAnimationComplete != null) {
+					mAnimationComplete.onAnimationComplete();
 				}
 			}
 
