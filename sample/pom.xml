@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.kidfolk.flyinmenu</groupId>
+    <artifactId>Android-FlyInMenu-sample</artifactId>
+    <packaging>apk</packaging>
+    <name>Android-FlyInMenu Sample</name>
+
+    <parent>
+        <groupId>org.kidfolk.flyinmenu</groupId>
+        <artifactId>Android-FlyInMenu-parent</artifactId>
+        <version>0.1</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.android</groupId>
+            <artifactId>android</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Support library (aka compatibility library) from the central repository as well
+            note that this uses default scope (NOT provided) since the library will need to be added to your apk -->
+            <groupId>com.google.android</groupId>
+            <artifactId>support-v4</artifactId>
+            <version>r6</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>Android-FlyInMenu-library</artifactId>
+            <type>apklib</type>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+                <artifactId>android-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
