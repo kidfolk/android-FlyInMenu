@@ -15,3 +15,6 @@ android-support-v4.jar
 *.ipr
 *.iws
 .idea/
+
+#mvn
+target/
