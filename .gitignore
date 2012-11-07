@@ -9,3 +9,12 @@ local.properties
 
 #jar
 android-support-v4.jar
+
+#intellij
+*.iml
+*.ipr
+*.iws
+.idea/
+
+#mvn
+target/
