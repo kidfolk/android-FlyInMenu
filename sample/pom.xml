@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.kidfolk.flyinmenu</groupId>
         <artifactId>Android-FlyInMenu-parent</artifactId>
-        <version>0.1</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -23,7 +23,7 @@
             note that this uses default scope (NOT provided) since the library will need to be added to your apk -->
             <groupId>com.google.android</groupId>
             <artifactId>support-v4</artifactId>
-            <version>r6</version>
+            <version>r7</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -38,6 +38,7 @@
             <plugin>
                 <groupId>com.jayway.maven.plugins.android.generation2</groupId>
                 <artifactId>android-maven-plugin</artifactId>
+                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>
